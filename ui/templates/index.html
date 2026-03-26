@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#08090e">
+  <title>OZY2</title>
+  <link rel="manifest" href="/static/manifest.json">
+  <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+  <link rel="stylesheet" href="/static/css/design.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ── Sidebar (Desktop) ──────────────────────────────── -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <div class="ozy-logo">✦</div>
+      <span class="ozy-name">OZY2</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label" data-i18n="navgroup.main">MAIN</div>
+      <div class="nav-item active" data-panel="chat" onclick="showPanel('chat')">
+        <span class="nav-icon">💬</span>
+        <span data-i18n="nav.chat">Chat</span>
+      </div>
+      <div class="nav-item" data-panel="home" onclick="showPanel('home')">
+        <span class="nav-icon">🏡</span>
+        <span data-i18n="nav.home">Home</span>
+      </div>
+      <div class="nav-item" data-panel="tasks" onclick="showPanel('tasks')">
+        <span class="nav-icon">✅</span>
+        <span data-i18n="nav.tasks">Tasks</span>
+      </div>
+      <div class="nav-item" data-panel="memory" onclick="showPanel('memory')">
+        <span class="nav-icon">🧠</span>
+        <span data-i18n="nav.memory">Memory</span>
+      </div>
+      <div class="nav-item" data-panel="briefing" onclick="showPanel('briefing')">
+        <span class="nav-icon">☀️</span>
+        <span data-i18n="nav.briefing">Briefing</span>
+      </div>
+
+      <div class="nav-section-label" data-i18n="navgroup.communication">COMMUNICATION</div>
+      <div class="nav-item" data-panel="gmail" onclick="showPanel('gmail')">
+        <span class="nav-icon">📧</span>
+        <span data-i18n="nav.gmail">Gmail</span>
+        <span class="nav-badge hidden" id="badge-gmail">0</span>
+      </div>
+      <div class="nav-item" data-panel="calendar" onclick="showPanel('calendar')">
+        <span class="nav-icon">📅</span>
+        <span data-i18n="nav.calendar">Calendar</span>
+      </div>
+      <div class="nav-item" data-panel="telegram" onclick="showPanel('telegram')">
+        <span class="nav-icon">✈️</span>
+        <span data-i18n="nav.telegram">Telegram</span>
+      </div>
+      <div class="nav-item" data-panel="whatsapp" onclick="showPanel('whatsapp')">
+        <span class="nav-icon">💬</span>
+        <span data-i18n="nav.whatsapp">WhatsApp</span>
+      </div>
+
+      <div class="nav-section-label" data-i18n="navgroup.productivity">PRODUCTIVITY</div>
+      <div class="nav-item" data-panel="projects" onclick="showPanel('projects')">
+        <span class="nav-icon">🗺️</span>
+        <span data-i18n="nav.projects">Projects</span>
+      </div>
+      <div class="nav-item" data-panel="drive" onclick="showPanel('drive')">
+        <span class="nav-icon">📁</span>
+        <span data-i18n="nav.drive">Drive</span>
+      </div>
+      <div class="nav-item" data-panel="github" onclick="showPanel('github')">
+        <span class="nav-icon">🐙</span>
+        <span data-i18n="nav.github">GitHub</span>
+      </div>
+      <div class="nav-item" data-panel="workspace" onclick="showPanel('workspace')">
+        <span class="nav-icon">🗂️</span>
+        <span data-i18n="nav.workspace">Workspace</span>
+      </div>
+
+      <div class="nav-section-label" data-i18n="navgroup.creative">CREATIVE</div>
+      <div class="nav-item" data-panel="youtube" onclick="showPanel('youtube')">
+        <span class="nav-icon">▶️</span>
+        <span data-i18n="nav.youtube">YouTube</span>
+      </div>
+      <div class="nav-item" data-panel="content" onclick="showPanel('content')">
+        <span class="nav-icon">🎨</span>
+        <span data-i18n="nav.content">Content</span>
+      </div>
+      <div class="nav-item" data-panel="debate" onclick="showPanel('debate')">
+        <span class="nav-icon">🤖</span>
+        <span data-i18n="nav.debate">AI Debate</span>
+      </div>
+
+      <div class="nav-section-label" data-i18n="navgroup.system">SYSTEM</div>
+      <div class="nav-item" data-panel="skills" onclick="showPanel('skills')">
+        <span class="nav-icon">⚡</span>
+        <span data-i18n="nav.skills">Skills</span>
+      </div>
+      <div class="nav-item" data-panel="automations" onclick="showPanel('automations')">
+        <span class="nav-icon">⚙️</span>
+        <span data-i18n="nav.automations">Automations</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="nav-item" data-panel="settings" onclick="showPanel('settings')">
+        <span class="nav-icon">🔧</span>
+        <span data-i18n="nav.settings">Settings</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ──────────────────────────────────────────── -->
+  <main id="main">
+
+    <!-- Topbar -->
+    <div id="topbar">
+      <button class="btn btn-ghost btn-icon" id="sidebar-toggle"
+              onclick="toggleSidebar()" style="display:none">☰</button>
+      <span class="topbar-title" id="topbar-title">Chat</span>
+      <div class="topbar-actions" id="topbar-actions"></div>
+    </div>
+
+    <!-- Panels -->
+    <div id="content">
+
+      <!-- Chat -->
+      <div class="panel active" id="panel-chat"></div>
+
+      <!-- Other panels — lazy loaded -->
+      <div class="panel" id="panel-home"></div>
+      <div class="panel" id="panel-tasks"></div>
+      <div class="panel" id="panel-memory"></div>
+      <div class="panel" id="panel-briefing"></div>
+      <div class="panel" id="panel-gmail"></div>
+      <div class="panel" id="panel-calendar"></div>
+      <div class="panel" id="panel-telegram"></div>
+      <div class="panel" id="panel-whatsapp"></div>
+      <div class="panel" id="panel-projects"></div>
+      <div class="panel" id="panel-drive"></div>
+      <div class="panel" id="panel-github"></div>
+      <div class="panel" id="panel-workspace"></div>
+      <div class="panel" id="panel-youtube"></div>
+      <div class="panel" id="panel-content"></div>
+      <div class="panel" id="panel-debate"></div>
+      <div class="panel" id="panel-skills"></div>
+      <div class="panel" id="panel-automations"></div>
+      <div class="panel" id="panel-settings"></div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ── Bottom Nav (Mobile) ────────────────────────────── -->
+<nav id="bottom-nav">
+  <div class="bottom-nav-inner">
+    <div class="bnav-item active" data-panel="chat" onclick="showPanel('chat')">
+      <span class="bnav-icon">💬</span>
+      <span data-i18n="nav.chat">Chat</span>
+    </div>
+    <div class="bnav-item" data-panel="tasks" onclick="showPanel('tasks')">
+      <span class="bnav-icon">✅</span>
+      <span data-i18n="nav.tasks">Tasks</span>
+    </div>
+    <div class="bnav-item" data-panel="gmail" onclick="showPanel('gmail')">
+      <span class="bnav-icon">📧</span>
+      <span data-i18n="nav.gmail">Gmail</span>
+    </div>
+    <div class="bnav-item" data-panel="memory" onclick="showPanel('memory')">
+      <span class="bnav-icon">🧠</span>
+      <span data-i18n="nav.memory">Memory</span>
+    </div>
+    <div class="bnav-item" data-panel="settings" onclick="showPanel('settings')">
+      <span class="bnav-icon">🔧</span>
+      <span data-i18n="nav.settings">Settings</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Toast container ────────────────────────────────── -->
+<div id="toast-container"></div>
+
+<!-- ── Scripts ────────────────────────────────────────── -->
+<script src="/static/js/i18n.js"></script>
+<script src="/static/js/app.js"></script>
+<script src="/static/js/panels/chat.js"></script>
+</body>
+</html>
