@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OZY2 — Your Personal AI Assistant</title>
+  <meta name="description" content="OZY2 is a local-first AI assistant that runs entirely on your machine. No cloud, no subscriptions, no one watching your data. macOS · Windows · Linux.">
+  <meta property="og:title" content="OZY2 — Your Personal AI Assistant">
+  <meta property="og:description" content="Local-first AI. Runs on your machine. macOS · Windows · Linux.">
+  <meta property="og:image" content="https://ozy2.com/og.png">
+  <meta property="og:url" content="https://ozy2.com">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <style>
+    :root {
+      --bg:       #080a10;
+      --bg2:      #0e1118;
+      --card:     #13161f;
+      --border:   #1e2130;
+      --accent:   #4f8ef7;
+      --purple:   #a855f7;
+      --pink:     #f43f5e;
+      --green:    #22c55e;
+      --text:     #e8eaf2;
+      --muted:    #5a6380;
+      --radius:   16px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── Gradient background blobs ── */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -200px; left: -200px;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, #4f8ef722 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -200px; right: -200px;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, #a855f718 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: #080a10cc;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex; align-items: center;
+      height: 60px; gap: 32px;
+    }
+    .nav-logo { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.5px; }
+    .nav-logo span { color: var(--accent); }
+    .nav-links { display: flex; gap: 24px; margin-left: auto; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none;
+      font-size: 0.88rem; font-weight: 500;
+      transition: color .15s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      background: var(--accent); color: #fff !important;
+      padding: 7px 16px; border-radius: 8px; font-weight: 600 !important;
+    }
+    .nav-cta:hover { opacity: 0.88; }
+
+    /* ── Sections ── */
+    section { position: relative; z-index: 1; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      padding: 110px 24px 80px;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #4f8ef712; border: 1px solid #4f8ef730;
+      color: var(--accent); border-radius: 20px;
+      padding: 5px 14px; font-size: 0.8rem; font-weight: 600;
+      margin-bottom: 28px; letter-spacing: 0.5px;
+    }
+    .hero-badge::before { content: '✦'; }
+    .hero h1 {
+      font-size: clamp(2.4rem, 6vw, 4.2rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -1.5px;
+      margin-bottom: 22px;
+    }
+    .hero h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: 1.15rem; color: var(--muted);
+      max-width: 560px; margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+    .hero-buttons {
+      display: flex; flex-wrap: wrap; gap: 12px;
+      justify-content: center; margin-bottom: 56px;
+    }
+    .btn-dl {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text); text-decoration: none;
+      padding: 12px 22px; border-radius: 12px;
+      font-size: 0.9rem; font-weight: 600;
+      transition: border-color .15s, transform .1s;
+    }
+    .btn-dl:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .btn-dl .os-icon { font-size: 1.3rem; }
+    .btn-dl .os-sub { font-size: 0.72rem; color: var(--muted); font-weight: 400; display: block; margin-top: 1px; }
+    .btn-primary-hero {
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      color: #fff; border: none;
+      padding: 14px 32px; border-radius: 12px;
+      font-size: 1rem; font-weight: 700;
+      text-decoration: none; cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn-primary-hero:hover { opacity: 0.88; transform: translateY(-1px); }
+
+    .hero-meta {
+      display: flex; align-items: center; justify-content: center;
+      gap: 28px; flex-wrap: wrap;
+      font-size: 0.82rem; color: var(--muted);
+    }
+    .hero-meta span { display: flex; align-items: center; gap: 6px; }
+    .hero-meta strong { color: var(--text); }
+
+    /* ── App preview ── */
+    .preview {
+      padding: 0 24px 100px;
+      display: flex; justify-content: center;
+    }
+    .preview-frame {
+      width: 100%; max-width: 880px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 40px 80px rgba(0,0,0,.6);
+    }
+    .preview-bar {
+      background: #0e1118;
+      padding: 12px 16px;
+      display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-r { background: #f43f5e; }
+    .dot-y { background: #f59e0b; }
+    .dot-g { background: #22c55e; }
+    .preview-url {
+      flex: 1; text-align: center;
+      font-size: 0.78rem; color: var(--muted);
+      background: #080a10; padding: 4px 12px;
+      border-radius: 6px; max-width: 280px; margin: 0 auto;
+    }
+    .preview-body {
+      padding: 32px;
+      display: grid; grid-template-columns: 200px 1fr;
+      gap: 20px; min-height: 360px;
+    }
+    .preview-sidebar {
+      background: #0b0d14;
+      border-radius: 12px; padding: 16px 12px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .p-nav-item {
+      padding: 8px 12px; border-radius: 8px;
+      font-size: 0.82rem; color: var(--muted);
+      display: flex; align-items: center; gap: 8px;
+      cursor: default;
+    }
+    .p-nav-item.active { background: #4f8ef718; color: var(--accent); font-weight: 600; }
+    .preview-chat {
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .p-msg {
+      display: flex; gap: 10px; align-items: flex-start;
+    }
+    .p-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; flex-shrink: 0; margin-top: 2px;
+    }
+    .p-avatar.user { background: #4f8ef722; color: var(--accent); }
+    .p-avatar.ai   { background: linear-gradient(135deg,#4f8ef7,#a855f7); color:#fff; }
+    .p-bubble {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px; padding: 10px 14px;
+      font-size: 0.85rem; line-height: 1.55;
+      max-width: 420px;
+    }
+    .p-bubble.ai { background: #4f8ef70a; border-color: #4f8ef730; }
+    .p-tool {
+      background: #22c55e0a; border: 1px solid #22c55e30;
+      border-radius: 8px; padding: 7px 12px;
+      font-size: 0.78rem; color: var(--green);
+      display: flex; align-items: center; gap: 6px;
+      margin-left: 42px;
+    }
+
+    /* ── Tagline strip ── */
+    .strip {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 0;
+      overflow: hidden;
+    }
+    .strip-inner {
+      display: flex; gap: 48px;
+      animation: marquee 22s linear infinite;
+      white-space: nowrap;
+    }
+    .strip-inner span {
+      font-size: 0.85rem; color: var(--muted); flex-shrink: 0;
+    }
+    .strip-inner strong { color: var(--text); }
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+
+    /* ── Section titles ── */
+    .section-label {
+      font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800; letter-spacing: -1px;
+      line-height: 1.15; margin-bottom: 16px;
+    }
+    .section-sub {
+      font-size: 1rem; color: var(--muted);
+      max-width: 500px; line-height: 1.65;
+    }
+
+    /* ── Plans ── */
+    .plans { padding: 100px 0; }
+    .plans-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px; margin-top: 56px;
+    }
+    .plan-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px; padding: 28px;
+      display: flex; flex-direction: column; gap: 16px;
+      transition: transform .15s, border-color .15s, box-shadow .15s;
+      position: relative; overflow: hidden;
+    }
+    .plan-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: var(--tier-color);
+    }
+    .plan-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--tier-color);
+      box-shadow: 0 16px 40px rgba(0,0,0,.4);
+    }
+    .plan-header { display: flex; align-items: center; gap: 14px; }
+    .plan-icon   { font-size: 2rem; }
+    .plan-name   { font-size: 1.1rem; font-weight: 700; margin-bottom: 2px; }
+    .plan-tagline{ font-size: 0.82rem; color: var(--muted); }
+    .plan-badge  {
+      margin-left: auto; padding: 4px 12px; border-radius: 20px;
+      font-size: 0.72rem; font-weight: 700; color: #fff;
+      background: var(--tier-color);
+    }
+    .plan-skills {
+      list-style: none; display: flex; flex-direction: column; gap: 9px;
+      flex: 1;
+    }
+    .plan-skill {
+      display: flex; align-items: flex-start; gap: 10px; font-size: 0.84rem;
+    }
+    .plan-skill-icon { font-size: 1rem; min-width: 22px; }
+    .plan-skill strong { display: block; font-weight: 600; }
+    .plan-skill small  { color: var(--muted); font-size: 0.78rem; }
+    .plan-includes {
+      font-size: 0.8rem; color: var(--muted);
+      padding: 8px 10px; background: #0b0d14;
+      border-radius: 8px;
+    }
+
+    /* ── Features ── */
+    .features { padding: 100px 0; }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px; margin-top: 56px;
+    }
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px;
+      transition: border-color .15s, transform .1s;
+    }
+    .feature-card:hover { border-color: #4f8ef740; transform: translateY(-2px); }
+    .feature-icon { font-size: 1.8rem; margin-bottom: 12px; }
+    .feature-title { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+    .feature-desc  { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+
+    /* ── How it works ── */
+    .how { padding: 100px 0; }
+    .steps-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px; margin-top: 56px;
+    }
+    .step-item {
+      text-align: center; padding: 32px 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+    .step-num {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1rem;
+      margin: 0 auto 16px;
+    }
+    .step-title { font-weight: 700; margin-bottom: 8px; }
+    .step-desc  { font-size: 0.84rem; color: var(--muted); line-height: 1.6; }
+
+    /* ── CTA ── */
+    .cta-section {
+      padding: 100px 24px;
+      text-align: center;
+    }
+    .cta-box {
+      max-width: 680px; margin: 0 auto;
+      background: linear-gradient(135deg, #4f8ef712, #a855f712);
+      border: 1px solid #4f8ef730;
+      border-radius: 24px; padding: 60px 40px;
+    }
+    .cta-box h2 {
+      font-size: clamp(1.8rem, 4vw, 2.4rem);
+      font-weight: 800; letter-spacing: -1px;
+      margin-bottom: 16px;
+    }
+    .cta-box p { color: var(--muted); margin-bottom: 36px; font-size: 1rem; }
+    .cta-buttons { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 24px;
+    }
+    .footer-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .footer-logo { font-size: 1rem; font-weight: 800; }
+    .footer-logo span { color: var(--accent); }
+    .footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+    .footer-links a {
+      color: var(--muted); text-decoration: none;
+      font-size: 0.84rem; transition: color .15s;
+    }
+    .footer-links a:hover { color: var(--text); }
+    .footer-copy { color: var(--muted); font-size: 0.8rem; }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .preview-body { grid-template-columns: 1fr; }
+      .preview-sidebar { display: none; }
+      .nav-links { display: none; }
+      .footer-inner { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ──────────────────────────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-logo">✦ OZY<span>2</span></div>
+  <div class="nav-links">
+    <a href="#plans">Plans</a>
+    <a href="#features">Features</a>
+    <a href="https://github.com/cabirpekdemir/ozy2" target="_blank">GitHub</a>
+    <a href="https://github.com/cabirpekdemir/ozy2/releases/latest" class="nav-cta">Download Free</a>
+  </div>
+</nav>
+
+<!-- ── Hero ─────────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-badge">Open Source · Local-first · v2.0</div>
+  <h1>Your AI assistant.<br><em>Runs on your machine.</em></h1>
+  <p>OZY2 is a personal AI that lives on your computer — not someone else's server.
+     No subscriptions. No cloud. No one watching your data.</p>
+
+  <div class="hero-buttons">
+    <a href="https://github.com/cabirpekdemir/ozy2/releases/latest" class="btn-primary-hero">
+      Download Free →
+    </a>
+    <a href="#" class="btn-dl" id="btn-mac">
+      <span class="os-icon">🍎</span>
+      <span>macOS<span class="os-sub">Apple Silicon & Intel</span></span>
+    </a>
+    <a href="#" class="btn-dl" id="btn-win">
+      <span class="os-icon">🪟</span>
+      <span>Windows<span class="os-sub">10 / 11 · 64-bit</span></span>
+    </a>
+    <a href="#" class="btn-dl" id="btn-linux">
+      <span class="os-icon">🐧</span>
+      <span>Linux<span class="os-sub">.tar.gz + installer</span></span>
+    </a>
+  </div>
+
+  <div class="hero-meta">
+    <span>⭐ <strong>Open source</strong> on GitHub</span>
+    <span>🔒 <strong>Zero telemetry</strong> — fully local</span>
+    <span>🤖 Works with <strong>Gemini · GPT-4o · Claude · Ollama</strong></span>
+    <span>🆓 <strong>Free forever</strong> — no account needed</span>
+  </div>
+</section>
+
+<!-- ── App Preview ───────────────────────────────────────────────────────────── -->
+<section class="preview">
+  <div class="preview-frame">
+    <div class="preview-bar">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+      <div class="preview-url">localhost:8081 — OZY2</div>
+    </div>
+    <div class="preview-body">
+      <div class="preview-sidebar">
+        <div class="p-nav-item active">💬 Chat</div>
+        <div class="p-nav-item">📅 Calendar</div>
+        <div class="p-nav-item">✅ Tasks</div>
+        <div class="p-nav-item">📧 Gmail</div>
+        <div class="p-nav-item">💾 Drive</div>
+        <div class="p-nav-item">🐙 GitHub</div>
+        <div class="p-nav-item">📰 News</div>
+        <div class="p-nav-item">📈 Stocks</div>
+        <div class="p-nav-item">▶️ YouTube</div>
+        <div class="p-nav-item">⚙️ Settings</div>
+      </div>
+      <div class="preview-chat">
+        <div class="p-msg">
+          <div class="p-avatar user">👤</div>
+          <div class="p-bubble">Good morning! What's my day looking like?</div>
+        </div>
+        <div class="p-tool">☀️ Fetching weather · calendar · tasks · headlines…</div>
+        <div class="p-msg">
+          <div class="p-avatar ai">✦</div>
+          <div class="p-bubble ai">
+            Good morning! Here's your briefing:<br><br>
+            🌤️ <strong>Istanbul</strong> — 18°C, partly cloudy<br>
+            📅 <strong>2 meetings today</strong> — 10:00 Design Review, 15:30 with Ahmet<br>
+            ✅ <strong>3 tasks</strong> pending — top priority: launch OZY2<br>
+            📰 <strong>Top story:</strong> AI agents become mainstream in 2026
+          </div>
+        </div>
+        <div class="p-msg">
+          <div class="p-avatar user">👤</div>
+          <div class="p-bubble">Search GitHub for FastAPI pagination libraries</div>
+        </div>
+        <div class="p-tool">🐙 Searching GitHub repositories…</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Marquee strip ──────────────────────────────────────────────────────────── -->
+<div class="strip">
+  <div class="strip-inner">
+    <span>🌤️ <strong>Weather</strong></span>
+    <span>🔍 <strong>Web Search</strong></span>
+    <span>📧 <strong>Gmail</strong></span>
+    <span>📅 <strong>Calendar</strong></span>
+    <span>🐙 <strong>GitHub</strong></span>
+    <span>🔲 <strong>Notion</strong></span>
+    <span>💎 <strong>Obsidian</strong></span>
+    <span>📋 <strong>Trello</strong></span>
+    <span>📈 <strong>Stocks</strong></span>
+    <span>🎵 <strong>Spotify</strong></span>
+    <span>▶️ <strong>YouTube</strong></span>
+    <span>💬 <strong>Discord</strong></span>
+    <span>💚 <strong>WhatsApp</strong></span>
+    <span>✈️ <strong>Telegram</strong></span>
+    <span>✍️ <strong>Content AI</strong></span>
+    <span>⚔️ <strong>Debate Mode</strong></span>
+    <span>🌤️ <strong>Weather</strong></span>
+    <span>🔍 <strong>Web Search</strong></span>
+    <span>📧 <strong>Gmail</strong></span>
+    <span>📅 <strong>Calendar</strong></span>
+    <span>🐙 <strong>GitHub</strong></span>
+    <span>🔲 <strong>Notion</strong></span>
+    <span>💎 <strong>Obsidian</strong></span>
+    <span>📋 <strong>Trello</strong></span>
+    <span>📈 <strong>Stocks</strong></span>
+    <span>🎵 <strong>Spotify</strong></span>
+    <span>▶️ <strong>YouTube</strong></span>
+    <span>💬 <strong>Discord</strong></span>
+    <span>💚 <strong>WhatsApp</strong></span>
+    <span>✈️ <strong>Telegram</strong></span>
+    <span>✍️ <strong>Content AI</strong></span>
+    <span>⚔️ <strong>Debate Mode</strong></span>
+  </div>
+</div>
+
+<!-- ── Plans ──────────────────────────────────────────────────────────────────── -->
+<section class="plans" id="plans">
+  <div class="container">
+    <div class="section-label">Plans</div>
+    <div class="section-title">Pick your power level</div>
+    <p class="section-sub">Start with YOU — it's free. Unlock more skills as you need them. Switch anytime, no reinstall required.</p>
+
+    <div class="plans-grid">
+
+      <!-- YOU -->
+      <div class="plan-card" style="--tier-color:#4f8ef7">
+        <div class="plan-header">
+          <div class="plan-icon">🧑</div>
+          <div>
+            <div class="plan-name">OZY2 You</div>
+            <div class="plan-tagline">Your everyday AI companion</div>
+          </div>
+          <div class="plan-badge">Free</div>
+        </div>
+        <ul class="plan-skills">
+          <li class="plan-skill"><span class="plan-skill-icon">🌤️</span><span><strong>Weather</strong><small>Real-time forecast for any city</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">🔍</span><span><strong>Web Search</strong><small>DuckDuckGo — no API key</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">📰</span><span><strong>News</strong><small>Top headlines by topic</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">💱</span><span><strong>Currency</strong><small>Live exchange rates</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">📝</span><span><strong>Summarizer</strong><small>Summarize text or URLs</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">📄</span><span><strong>Word / DOCX</strong><small>Create Word documents</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">📊</span><span><strong>Excel / XLSX</strong><small>Generate spreadsheets</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">🗒️</span><span><strong>Notes & Reminders</strong><small>Apple Notes · local fallback</small></span></li>
+        </ul>
+      </div>
+
+      <!-- PRO -->
+      <div class="plan-card" style="--tier-color:#a855f7">
+        <div class="plan-header">
+          <div class="plan-icon">⚡</div>
+          <div>
+            <div class="plan-name">OZY2 Pro</div>
+            <div class="plan-tagline">Productivity powerhouse</div>
+          </div>
+          <div class="plan-badge">Pro</div>
+        </div>
+        <div class="plan-includes">✅ Everything in <strong>OZY2 You</strong>, plus:</div>
+        <ul class="plan-skills">
+          <li class="plan-skill"><span class="plan-skill-icon">📧</span><span><strong>Gmail</strong><small>Read, search and send emails</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">💾</span><span><strong>Google Drive</strong><small>Browse, upload, manage files</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">🐙</span><span><strong>GitHub</strong><small>Search repos, issues, PRs</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">🔲</span><span><strong>Notion</strong><small>Read and write pages</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">💎</span><span><strong>Obsidian</strong><small>Query your vault</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">📋</span><span><strong>Trello</strong><small>Boards, lists and cards</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">📈</span><span><strong>Stocks</strong><small>Live prices and charts</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">✍️</span><span><strong>Content Creator</strong><small>Blog posts, captions, ad copy</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">☀️</span><span><strong>Daily Briefing</strong><small>Morning summary of everything</small></span></li>
+        </ul>
+      </div>
+
+      <!-- SOCIAL -->
+      <div class="plan-card" style="--tier-color:#f43f5e">
+        <div class="plan-header">
+          <div class="plan-icon">🌐</div>
+          <div>
+            <div class="plan-name">OZY2 Social</div>
+            <div class="plan-tagline">Your social & creative layer</div>
+          </div>
+          <div class="plan-badge">Social</div>
+        </div>
+        <div class="plan-includes">✅ Everything in <strong>OZY2 Pro</strong>, plus:</div>
+        <ul class="plan-skills">
+          <li class="plan-skill"><span class="plan-skill-icon">📲</span><span><strong>Social Media</strong><small>Draft posts for X, Instagram, LinkedIn</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">💬</span><span><strong>Discord</strong><small>Send messages to channels</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">🎵</span><span><strong>Spotify</strong><small>Search tracks, now playing</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">▶️</span><span><strong>YouTube</strong><small>Search, transcripts, summaries</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">💚</span><span><strong>WhatsApp</strong><small>Send messages via Twilio</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">⚔️</span><span><strong>Debate Mode</strong><small>Multi-AI structured debates</small></span></li>
+          <li class="plan-skill"><span class="plan-skill-icon">🔔</span><span><strong>Email Monitor</strong><small>Watch inbox for keywords</small></span></li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── Features ───────────────────────────────────────────────────────────────── -->
+<section class="features" id="features">
+  <div class="container">
+    <div class="section-label">Why OZY2</div>
+    <div class="section-title">Built differently</div>
+    <p class="section-sub">Every design decision starts with one question: is this good for the user, or for us?</p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <div class="feature-title">100% Local</div>
+        <div class="feature-desc">Everything runs on your machine. Your conversations, API keys, and files never touch our servers — because we don't have any.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🤖</div>
+        <div class="feature-title">Any AI Provider</div>
+        <div class="feature-desc">Bring your own key. OZY2 works with Gemini, GPT-4o, Claude, and Ollama. Switch providers anytime without losing your data.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">38 Integrated Tools</div>
+        <div class="feature-desc">From weather to GitHub to Spotify — OZY2 connects to the tools you already use. No copy-pasting between apps.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🖥️</div>
+        <div class="feature-title">All 3 Platforms</div>
+        <div class="feature-desc">Native installers for macOS, Windows and Linux. Double-click to install, double-click to launch. No terminal required.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🆓</div>
+        <div class="feature-title">Open Source & Free</div>
+        <div class="feature-desc">The full source code is on GitHub. Audit it, fork it, self-host it. No subscription, no account, no lock-in.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧠</div>
+        <div class="feature-title">Persistent Memory</div>
+        <div class="feature-desc">OZY2 remembers facts about you across conversations. Tell it once — it knows forever. Stored locally in SQLite.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── How it works ───────────────────────────────────────────────────────────── -->
+<section class="how" id="how">
+  <div class="container">
+    <div class="section-label">Getting Started</div>
+    <div class="section-title">Up in 60 seconds</div>
+    <div class="steps-row">
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-title">Download</div>
+        <div class="step-desc">Grab the installer for your OS from GitHub Releases. One file, no dependencies.</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-title">Install</div>
+        <div class="step-desc">macOS: drag to Applications. Windows: run the .exe. Linux: run install.sh.</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-title">Add your key</div>
+        <div class="step-desc">Paste your AI provider API key in the setup wizard. Gemini has a free tier — no credit card needed.</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">4</div>
+        <div class="step-title">Start talking</div>
+        <div class="step-desc">OZY2 opens in your browser. Ask it anything. Connect the integrations you need.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ────────────────────────────────────────────────────────────────────── -->
+<section class="cta-section">
+  <div class="cta-box">
+    <h2>Your AI. Your machine.<br>Your rules.</h2>
+    <p>Free, open source, and ready to run in 60 seconds.</p>
+    <div class="cta-buttons">
+      <a href="https://github.com/cabirpekdemir/ozy2/releases/latest" class="btn-primary-hero">
+        Download OZY2 Free →
+      </a>
+      <a href="https://github.com/cabirpekdemir/ozy2" target="_blank" class="btn-dl" style="border-color:#4f8ef740">
+        <span class="os-icon">⭐</span>
+        <span>Star on GitHub<span class="os-sub">Leave a star if you like it</span></span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">✦ OZY<span>2</span></div>
+    <div class="footer-links">
+      <a href="https://github.com/cabirpekdemir/ozy2" target="_blank">GitHub</a>
+      <a href="https://github.com/cabirpekdemir/ozy2/releases" target="_blank">Releases</a>
+      <a href="https://github.com/cabirpekdemir/ozy2/blob/main/PRIVACY.md" target="_blank">Privacy</a>
+      <a href="https://github.com/cabirpekdemir/ozy2/issues" target="_blank">Issues</a>
+      <a href="https://youtube.com/@ozyai" target="_blank">YouTube</a>
+    </div>
+    <div class="footer-copy">© 2026 OZY2 — Open Source</div>
+  </div>
+</footer>
+
+<script>
+// ── Fetch latest release download links from GitHub API ───────────────────────
+(async () => {
+  try {
+    const r    = await fetch("https://api.github.com/repos/cabirpekdemir/ozy2/releases/latest");
+    const data = await r.json();
+    const assets = data.assets || [];
+
+    const mac   = assets.find(a => a.name.includes("mac") && a.name.endsWith(".dmg"));
+    const win   = assets.find(a => a.name.includes("windows") && a.name.endsWith(".exe"));
+    const linux = assets.find(a => a.name.includes("linux") && a.name.endsWith(".tar.gz"));
+
+    if (mac)   document.getElementById("btn-mac").href   = mac.browser_download_url;
+    if (win)   document.getElementById("btn-win").href   = win.browser_download_url;
+    if (linux) document.getElementById("btn-linux").href = linux.browser_download_url;
+  } catch (e) {
+    // Fallback to releases page
+    ["btn-mac","btn-win","btn-linux"].forEach(id => {
+      document.getElementById(id).href = "https://github.com/cabirpekdemir/ozy2/releases/latest";
+    });
+  }
+})();
+</script>
+
+</body>
+</html>

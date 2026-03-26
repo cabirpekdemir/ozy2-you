@@ -120,9 +120,9 @@ exe = EXE(
     entitlements_file=None,
     icon=(
         str(ROOT / "ui" / "static" / "icons" / "icon.icns")
-        if sys.platform == "darwin"
+        if sys.platform == "darwin" and (ROOT / "ui" / "static" / "icons" / "icon.icns").exists()
         else str(ROOT / "ui" / "static" / "icons" / "icon.ico")
-        if sys.platform == "win32"
+        if sys.platform == "win32" and (ROOT / "ui" / "static" / "icons" / "icon.ico").exists()
         else None
     ),
 )
@@ -140,10 +140,11 @@ coll = COLLECT(
 
 # macOS: wrap as .app bundle
 if sys.platform == "darwin":
+    _icns = ROOT / "ui" / "static" / "icons" / "icon.icns"
     app = BUNDLE(
         coll,
         name="OZY2.app",
-        icon=str(ROOT / "ui" / "static" / "icons" / "icon.icns"),
+        icon=str(_icns) if _icns.exists() else None,
         bundle_identifier="com.ozy2.app",
         info_plist={
             "CFBundleName":               "OZY2",
