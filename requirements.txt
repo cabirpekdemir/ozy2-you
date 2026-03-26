@@ -1,9 +1,36 @@
+# ── Web framework ────────────────────────────────────────────────────────────
 fastapi>=0.110
 uvicorn[standard]>=0.27
 jinja2>=3.1
 python-multipart>=0.0.9
+aiofiles>=23.0
+
+# ── AI providers ─────────────────────────────────────────────────────────────
 google-genai>=1.0
 openai>=1.0
 anthropic>=0.25
 ollama>=0.2
-aiofiles>=23.0
+
+# ── YOU tier ─────────────────────────────────────────────────────────────────
+duckduckgo-search>=6.0          # web_search, get_news
+python-docx>=1.1                # create_document (Word)
+openpyxl>=3.1                   # create_spreadsheet (Excel)
+
+# ── PRO tier ─────────────────────────────────────────────────────────────────
+# (GitHub, Notion, Obsidian, Trello, Stocks use stdlib urllib — no extra deps)
+
+# ── SOCIAL tier ──────────────────────────────────────────────────────────────
+youtube-transcript-api>=0.6     # get_youtube_transcript
+
+# ── Launcher / system tray ────────────────────────────────────────────────────
+pystray>=0.19                   # system tray icon (all platforms)
+Pillow>=10.0                    # tray icon rendering
+
+# ── Google integrations ───────────────────────────────────────────────────────
+google-auth>=2.0
+google-auth-oauthlib>=1.0
+google-auth-httplib2>=0.2
+google-api-python-client>=2.0
+
+# ── Packaging (only needed at build time, not runtime) ────────────────────────
+# pyinstaller>=6.0             # uncomment to build locally

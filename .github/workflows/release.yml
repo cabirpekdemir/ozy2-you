@@ -1,0 +1,229 @@
+name: Build & Release
+
+# ────────────────────────────────────────────────────────────────────────────
+# Triggers on any pushed tag that matches vX.Y.Z  (e.g. v2.0.0, v2.1.3)
+# Creates a GitHub Release with installers for macOS, Windows and Linux.
+# ────────────────────────────────────────────────────────────────────────────
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write    # needed to create/update Releases
+
+env:
+  APP_NAME: OZY2
+  PYTHON_VERSION: "3.11"
+
+# ════════════════════════════════════════════════════════════════════════════
+jobs:
+
+  # ── 1. macOS → OZY2-vX.Y.Z-mac.dmg ────────────────────────────────────────
+  build-mac:
+    name: macOS (universal DMG)
+    runs-on: macos-14          # Apple Silicon runner (builds arm64 & x86_64)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller packaging/OZY2.spec --clean --noconfirm
+          # Verify the .app exists
+          test -d dist/OZY2.app
+
+      - name: Code-sign (ad-hoc — works without Apple Developer account)
+        run: |
+          codesign --force --deep --sign - dist/OZY2.app
+          codesign --verify --deep --strict dist/OZY2.app
+
+      - name: Create DMG
+        run: |
+          brew install create-dmg
+          create-dmg \
+            --volname "OZY2" \
+            --volicon "ui/static/icons/icon.icns" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 128 \
+            --icon "OZY2.app" 140 185 \
+            --hide-extension "OZY2.app" \
+            --app-drop-link 460 185 \
+            --no-internet-enable \
+            "dist/${{ env.APP_NAME }}-${{ github.ref_name }}-mac.dmg" \
+            "dist/OZY2.app"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-dmg
+          path: dist/${{ env.APP_NAME }}-${{ github.ref_name }}-mac.dmg
+          retention-days: 1
+
+  # ── 2. Windows → OZY2-vX.Y.Z-windows.exe (NSIS installer) ─────────────────
+  build-windows:
+    name: Windows (NSIS installer)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller packaging/OZY2.spec --clean --noconfirm
+          if (!(Test-Path "dist\OZY2\OZY2.exe")) { exit 1 }
+
+      - name: Install NSIS
+        run: choco install nsis --no-progress -y
+
+      - name: Build NSIS installer
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          (Get-Content packaging\windows\installer.nsi) `
+            -replace "__VERSION__", $version `
+            -replace "__OUTFILE__", "${{ env.APP_NAME }}-${{ github.ref_name }}-windows.exe" |
+            Set-Content build_installer.nsi
+          makensis build_installer.nsi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: ${{ env.APP_NAME }}-${{ github.ref_name }}-windows.exe
+          retention-days: 1
+
+  # ── 3. Linux → OZY2-vX.Y.Z-linux.tar.gz ────────────────────────────────────
+  build-linux:
+    name: Linux (AppImage + tarball)
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y fuse libfuse2 patchelf
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller packaging/OZY2.spec --clean --noconfirm
+          test -d dist/OZY2
+
+      - name: Create install script
+        run: |
+          cp packaging/linux/install.sh dist/OZY2/install.sh
+          chmod +x dist/OZY2/install.sh dist/OZY2/OZY2
+
+      - name: Create tarball
+        run: |
+          cd dist
+          tar -czf "${{ env.APP_NAME }}-${{ github.ref_name }}-linux.tar.gz" OZY2/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-tarball
+          path: dist/${{ env.APP_NAME }}-${{ github.ref_name }}-linux.tar.gz
+          retention-days: 1
+
+  # ── 4. Publish GitHub Release ───────────────────────────────────────────────
+  release:
+    name: Publish Release
+    needs: [build-mac, build-windows, build-linux]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+
+      - name: Extract CHANGELOG entry for this version
+        id: changelog
+        run: |
+          VERSION="${{ github.ref_name }}"
+          # Extract section between this version header and the next
+          NOTES=$(awk "/^## \[$VERSION\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
+          echo "NOTES<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES"    >> $GITHUB_OUTPUT
+          echo "EOF"       >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name:   ${{ github.ref_name }}
+          name:       "OZY2 ${{ github.ref_name }}"
+          draft:      false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          body: |
+            ## OZY2 ${{ github.ref_name }}
+
+            **Personal AI Assistant — Local-first, runs entirely on your machine.**
+
+            ${{ steps.changelog.outputs.NOTES }}
+
+            ---
+
+            ### 📦 Download
+
+            | Platform | File | Notes |
+            |----------|------|-------|
+            | 🍎 macOS 12+ | `*-mac.dmg` | Open DMG → drag to Applications |
+            | 🪟 Windows 10/11 | `*-windows.exe` | Run installer → Desktop shortcut |
+            | 🐧 Linux | `*-linux.tar.gz` | Extract → run `./install.sh` |
+
+            ### ⚠️ Important
+
+            OZY2 is an AI agent that can take real-world actions (send emails, post to
+            social media, manage files). **Only grant the permissions you need.**
+            Your API keys and data stay on your device — nothing is sent to our servers.
+
+            ### 🔑 First run
+            1. Download and install for your platform
+            2. Launch OZY2 — a setup wizard opens in your browser
+            3. Enter your AI provider API key (Gemini / OpenAI / Anthropic)
+            4. Choose your plan (YOU / PRO / SOCIAL) and activate integrations
+          files: |
+            dist/mac-dmg/${{ env.APP_NAME }}-${{ github.ref_name }}-mac.dmg
+            dist/windows-installer/${{ env.APP_NAME }}-${{ github.ref_name }}-windows.exe
+            dist/linux-tarball/${{ env.APP_NAME }}-${{ github.ref_name }}-linux.tar.gz

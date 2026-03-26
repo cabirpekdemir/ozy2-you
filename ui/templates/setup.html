@@ -231,11 +231,60 @@
     <div class="step-dot" id="dot-1"></div>
     <div class="step-dot" id="dot-2"></div>
     <div class="step-dot" id="dot-3"></div>
+    <div class="step-dot" id="dot-4"></div>
   </div>
 
   <div class="card">
 
-    <!-- ── Step 0: Provider ── -->
+    <!-- ── Step 0: Safety & Disclaimer ── -->
+    <div class="step-panel active" id="step-0">
+      <h2>⚠️ Before you start</h2>
+      <p class="sub">Please read this — it takes 30 seconds.</p>
+
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
+
+        <div style="background:#f43f5e18;border:1px solid #f43f5e44;border-radius:10px;padding:14px 16px">
+          <strong style="color:#f43f5e">OZY2 is an AI agent, not just a chatbot.</strong>
+          <p style="font-size:0.85rem;color:var(--muted);margin-top:6px;line-height:1.5">
+            It can take <strong>real-world actions</strong> on your behalf — send emails,
+            post to social media, create files, send messages. These actions cannot always
+            be undone. Grant only the permissions you actually need.
+          </p>
+        </div>
+
+        <div style="background:#4f8ef718;border:1px solid #4f8ef744;border-radius:10px;padding:14px 16px">
+          <strong style="color:#4f8ef7">🔒 Your data stays on your device.</strong>
+          <p style="font-size:0.85rem;color:var(--muted);margin-top:6px;line-height:1.5">
+            OZY2 is local-first. Your API keys, conversations and files never leave
+            your machine or reach our servers. Your data is stored in <code style="color:var(--accent)">~/.ozy2/</code>.
+          </p>
+        </div>
+
+        <div style="background:#a855f718;border:1px solid #a855f744;border-radius:10px;padding:14px 16px">
+          <strong style="color:#a855f7">🤖 AI can make mistakes.</strong>
+          <p style="font-size:0.85rem;color:var(--muted);margin-top:6px;line-height:1.5">
+            Always review important outputs before sending or publishing. The authors of
+            OZY2 are not responsible for any unintended actions taken by the AI agent.
+          </p>
+        </div>
+      </div>
+
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:0.88rem;color:var(--text)">
+        <input type="checkbox" id="agree-check" onchange="this.checked
+          ? document.getElementById('btn-agree').removeAttribute('disabled')
+          : document.getElementById('btn-agree').setAttribute('disabled','')">
+        I understand that OZY2 can take real actions on my behalf and I accept the
+        <a href="/privacy" target="_blank" style="color:var(--accent);margin-left:4px">Privacy Policy</a>.
+      </label>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-agree" onclick="goStep(1)" disabled>
+          I understand — Continue →
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Step 1: Provider ── -->
     <div class="step-panel active" id="step-0">
       <h2>Choose your AI</h2>
       <p class="sub">OZY2 works with multiple AI providers. Pick one to get started.</p>
@@ -247,12 +296,13 @@
         <select id="model-select"></select>
       </div>
       <div class="btn-row">
-        <button class="btn btn-primary" id="btn-0" onclick="goStep(1)" disabled>Continue →</button>
+        <button class="btn btn-ghost" onclick="goStep(0)">← Back</button>
+        <button class="btn btn-primary" id="btn-1" onclick="goStep(2)" disabled>Continue →</button>
       </div>
     </div>
 
-    <!-- ── Step 1: API Key ── -->
-    <div class="step-panel" id="step-1">
+    <!-- ── Step 2: API Key ── -->
+    <div class="step-panel" id="step-2">
       <h2>Enter your API key</h2>
       <p class="sub" id="key-hint">Paste your API key below.</p>
       <div class="err-msg" id="key-err"></div>
@@ -267,26 +317,26 @@
         <input type="text" id="ollama-url" value="http://localhost:11434" placeholder="http://localhost:11434">
       </div>
       <div class="btn-row">
-        <button class="btn btn-ghost" onclick="goStep(0)">← Back</button>
-        <button class="btn btn-primary" id="btn-1" onclick="goStep(2)" disabled>Continue →</button>
-      </div>
-    </div>
-
-    <!-- ── Step 2: Plan ── -->
-    <div class="step-panel" id="step-2">
-      <h2>Choose your plan</h2>
-      <p class="sub">You can change this anytime from Settings.</p>
-      <div class="plan-grid" id="plan-grid">
-        <!-- filled by JS -->
-      </div>
-      <div class="btn-row">
         <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
         <button class="btn btn-primary" id="btn-2" onclick="goStep(3)" disabled>Continue →</button>
       </div>
     </div>
 
-    <!-- ── Step 3: Name + Finish ── -->
+    <!-- ── Step 3: Plan ── -->
     <div class="step-panel" id="step-3">
+      <h2>Choose your plan</h2>
+      <p class="sub">You can change this anytime in Settings → Plans.</p>
+      <div class="plan-grid" id="plan-grid">
+        <!-- filled by JS -->
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
+        <button class="btn btn-primary" id="btn-3" onclick="goStep(4)" disabled>Continue →</button>
+      </div>
+    </div>
+
+    <!-- ── Step 4: Name + Finish ── -->
+    <div class="step-panel" id="step-4">
       <h2>Almost done!</h2>
       <p class="sub">Tell OZY2 your name so it can greet you properly.</p>
       <div class="err-msg" id="finish-err"></div>
@@ -302,7 +352,7 @@
         </select>
       </div>
       <div class="btn-row">
-        <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
+        <button class="btn btn-ghost" onclick="goStep(3)">← Back</button>
         <button class="btn btn-primary" id="btn-finish" onclick="finish()">
           Launch OZY2 🚀
         </button>
@@ -410,7 +460,7 @@ function updateKeyStep() {
 // Patch goStep to update key step on transition
 const _goStep = goStep;
 window.goStep = function(n) {
-  if (n === 1) updateKeyStep();
+  if (n === 2) updateKeyStep();
   _goStep(n);
 };
 
@@ -445,7 +495,7 @@ function selectPlan(id) {
   document.querySelectorAll(".plan-option").forEach(p => p.classList.remove("selected"));
   const el = document.getElementById(`plan-${id}`);
   if (el) el.classList.add("selected");
-  document.getElementById("btn-2").disabled = false;
+  document.getElementById("btn-3").disabled = false;
 }
 
 // ── Finish ────────────────────────────────────────────────────────────────────
