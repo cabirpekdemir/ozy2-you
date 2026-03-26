@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
 
-router = APIRouter(prefix="/api/tasks", tags=["tasks"])
+router = APIRouter(prefix="/api/tasks", tags=["Tasks"])
 
 
 class TaskCreate(BaseModel):

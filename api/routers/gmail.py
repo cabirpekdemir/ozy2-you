@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 
-router = APIRouter(prefix="/api/gmail", tags=["gmail"])
+router = APIRouter(prefix="/api/gmail", tags=["Gmail"])
 
 
 class SendRequest(BaseModel):

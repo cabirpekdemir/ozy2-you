@@ -1,7 +1,7 @@
 """OZY2 — Briefing API Router"""
 from fastapi import APIRouter
 
-router = APIRouter(prefix="/api/briefing", tags=["briefing"])
+router = APIRouter(prefix="/api/briefing", tags=["Briefing"])
 
 
 async def _generate_briefing() -> dict:

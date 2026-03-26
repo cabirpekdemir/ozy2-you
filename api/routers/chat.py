@@ -6,7 +6,7 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from api.state import get_agent
 from core.memory import get_history, clear_history
 
-router = APIRouter()
+router = APIRouter(tags=["Chat"])
 
 
 @router.post("/api/chat")

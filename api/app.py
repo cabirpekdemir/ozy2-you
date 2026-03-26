@@ -39,7 +39,29 @@ async def lifespan(app: FastAPI):
     logger.info("[OZY2] Shut down.")
 
 
-app = FastAPI(title="OZY2", version="2.0.0", lifespan=lifespan)
+app = FastAPI(
+    title="OZY2 — Personal AI Assistant",
+    version="2.0.0",
+    description="""
+## OZY2 API
+
+Personal AI assistant backend. All endpoints return `{"ok": true, ...}` on success.
+
+### Authentication
+No auth required — runs locally on `127.0.0.1:8081`.
+
+### Streaming Chat
+Use `GET /api/chat/stream?message=...` for SSE streaming.
+Each event: `data: {"chunk": "..."}` — final event: `data: [DONE]`
+
+### Integrations
+Google OAuth token required for Gmail, Calendar, Drive.
+Run `python3 reauth_google.py` once to authorize.
+""",
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
 
 # Static files
 app.mount("/static", StaticFiles(directory=str(STATIC)), name="static")

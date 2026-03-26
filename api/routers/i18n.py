@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-router   = APIRouter()
+router   = APIRouter(tags=["i18n"])
 I18N_DIR = Path(__file__).parent.parent.parent / "ui" / "i18n"
 _cache: dict[str, dict] = {}
 

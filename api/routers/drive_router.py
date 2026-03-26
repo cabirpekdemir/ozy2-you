@@ -2,7 +2,7 @@
 from fastapi import APIRouter
 from typing import Optional
 
-router = APIRouter(prefix="/api/drive", tags=["drive"])
+router = APIRouter(prefix="/api/drive", tags=["Drive"])
 
 
 @router.get("/files")

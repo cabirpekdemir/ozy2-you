@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import APIRouter, Request
 from api.state import reset_agent
 
-router     = APIRouter()
+router     = APIRouter(tags=["Settings"])
 CONFIG     = Path(__file__).parent.parent.parent / "config" / "settings.json"
 DEFAULTS   = {
     "provider": "gemini",

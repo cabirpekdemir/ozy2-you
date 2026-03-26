@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
 
-router = APIRouter(prefix="/api/telegram", tags=["telegram"])
+router = APIRouter(prefix="/api/telegram", tags=["Telegram"])
 
 
 class SendRequest(BaseModel):

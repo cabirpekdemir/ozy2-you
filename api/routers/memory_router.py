@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
 
-router = APIRouter(prefix="/api/memory", tags=["memory"])
+router = APIRouter(prefix="/api/memory", tags=["Memory"])
 
 
 class FactCreate(BaseModel):

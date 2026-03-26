@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
 
-router = APIRouter(prefix="/api/calendar", tags=["calendar"])
+router = APIRouter(prefix="/api/calendar", tags=["Calendar"])
 
 
 class EventCreate(BaseModel):
