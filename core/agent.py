@@ -44,8 +44,22 @@ class Agent:
         add_message("user", user_message)
         messages = history + [{"role": "user", "content": user_message}]
 
-        # Get tool schemas (only registered tools)
-        tools = get_all_schemas()
+        # Get tool schemas filtered by active package
+        from pathlib import Path as _Path
+        import json as _json
+        try:
+            _cfg  = _json.loads((_Path(__file__).parent.parent / "config" / "settings.json").read_text())
+            _pkg  = _cfg.get("package", "full")
+            _TIER_PACKAGES = {
+                "you":    {"core", "you"},
+                "pro":    {"core", "you", "pro"},
+                "social": {"core", "you", "pro", "social"},
+                "full":   None,  # None = all packages
+            }
+            _allowed = _TIER_PACKAGES.get(_pkg)
+        except Exception:
+            _allowed = None
+        tools = get_all_schemas(packages=_allowed)
 
         # Call LLM
         response = await self.llm.chat(

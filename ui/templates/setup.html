@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OZY2 — Setup</title>
+  <style>
+    :root {
+      --bg:        #0d0f14;
+      --card:      #161920;
+      --border:    #2a2d38;
+      --accent:    #4f8ef7;
+      --purple:    #a855f7;
+      --red:       #f43f5e;
+      --text:      #e8eaf0;
+      --muted:     #6b7280;
+      --success:   #22c55e;
+      --radius:    14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* ── Wizard shell ── */
+    .wizard {
+      width: 100%;
+      max-width: 560px;
+    }
+    .wizard-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .wizard-logo .star { font-size: 3rem; }
+    .wizard-logo h1 { font-size: 1.8rem; font-weight: 700; margin-top: 8px; }
+    .wizard-logo p  { color: var(--muted); font-size: 0.95rem; margin-top: 4px; }
+
+    /* ── Step indicator ── */
+    .steps {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 28px;
+    }
+    .step-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: background .25s, width .25s;
+    }
+    .step-dot.active { background: var(--accent); width: 24px; border-radius: 4px; }
+    .step-dot.done   { background: var(--success); }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+    }
+    .card h2   { font-size: 1.25rem; font-weight: 700; margin-bottom: 6px; }
+    .card .sub { color: var(--muted); font-size: 0.88rem; margin-bottom: 24px; }
+
+    /* ── Step panels ── */
+    .step-panel { display: none; }
+    .step-panel.active { display: block; }
+
+    /* ── Provider grid ── */
+    .provider-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .provider-btn {
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color .15s, background .15s;
+    }
+    .provider-btn:hover { border-color: var(--accent); }
+    .provider-btn.selected { border-color: var(--accent); background: #4f8ef711; }
+    .provider-btn .p-icon { font-size: 1.4rem; display: block; margin-bottom: 6px; }
+    .provider-btn .p-name { font-size: 0.85rem; font-weight: 600; }
+    .provider-btn .p-free { font-size: 0.72rem; color: var(--success); margin-top: 2px; }
+
+    /* ── Form elements ── */
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 6px; }
+    input, select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.95rem;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    input:focus, select:focus { border-color: var(--accent); }
+    .field { margin-bottom: 16px; }
+    .key-link {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-decoration: none;
+      margin-top: 6px;
+      display: inline-block;
+    }
+    .key-link:hover { text-decoration: underline; }
+
+    /* ── Plan cards ── */
+    .plan-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .plan-option {
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: border-color .15s;
+    }
+    .plan-option:hover { border-color: var(--accent); }
+    .plan-option.selected { border-color: var(--accent); background: #4f8ef711; }
+    .plan-option .p-icon { font-size: 1.6rem; }
+    .plan-option .p-info h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 2px; }
+    .plan-option .p-info p  { font-size: 0.8rem; color: var(--muted); }
+    .plan-option .p-badge {
+      margin-left: auto;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* ── Buttons ── */
+    .btn-row { display: flex; gap: 10px; margin-top: 24px; }
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: 0.88; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-ghost   { background: var(--border); color: var(--muted); flex: 0 0 auto; padding: 12px 20px; }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Success screen ── */
+    .success-screen {
+      text-align: center;
+      padding: 12px 0;
+    }
+    .success-screen .checkmark { font-size: 3.5rem; margin-bottom: 16px; }
+    .success-screen h2 { font-size: 1.5rem; margin-bottom: 8px; }
+    .success-screen p  { color: var(--muted); margin-bottom: 24px; }
+    .skills-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+    .skill-tag {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+    }
+
+    /* ── Error msg ── */
+    .err-msg {
+      background: #f43f5e22;
+      border: 1px solid #f43f5e44;
+      border-radius: 8px;
+      color: var(--red);
+      font-size: 0.83rem;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .err-msg.show { display: block; }
+
+    /* ── Loading ── */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid #ffffff44;
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div class="wizard">
+  <div class="wizard-logo">
+    <div class="star">✦</div>
+    <h1>Welcome to OZY2</h1>
+    <p>Your personal AI assistant — let's get you set up</p>
+  </div>
+
+  <div class="steps">
+    <div class="step-dot active" id="dot-0"></div>
+    <div class="step-dot" id="dot-1"></div>
+    <div class="step-dot" id="dot-2"></div>
+    <div class="step-dot" id="dot-3"></div>
+  </div>
+
+  <div class="card">
+
+    <!-- ── Step 0: Provider ── -->
+    <div class="step-panel active" id="step-0">
+      <h2>Choose your AI</h2>
+      <p class="sub">OZY2 works with multiple AI providers. Pick one to get started.</p>
+      <div class="provider-grid" id="provider-grid">
+        <!-- filled by JS -->
+      </div>
+      <div class="field" id="model-field" style="display:none">
+        <label>Model</label>
+        <select id="model-select"></select>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-0" onclick="goStep(1)" disabled>Continue →</button>
+      </div>
+    </div>
+
+    <!-- ── Step 1: API Key ── -->
+    <div class="step-panel" id="step-1">
+      <h2>Enter your API key</h2>
+      <p class="sub" id="key-hint">Paste your API key below.</p>
+      <div class="err-msg" id="key-err"></div>
+      <div class="field">
+        <label>API Key</label>
+        <input type="password" id="api-key" placeholder="sk-..." autocomplete="off"
+               oninput="validateKey()">
+        <a href="#" id="key-link" class="key-link" target="_blank">Get a free API key →</a>
+      </div>
+      <div class="field" id="ollama-note" style="display:none">
+        <label>Ollama Base URL</label>
+        <input type="text" id="ollama-url" value="http://localhost:11434" placeholder="http://localhost:11434">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goStep(0)">← Back</button>
+        <button class="btn btn-primary" id="btn-1" onclick="goStep(2)" disabled>Continue →</button>
+      </div>
+    </div>
+
+    <!-- ── Step 2: Plan ── -->
+    <div class="step-panel" id="step-2">
+      <h2>Choose your plan</h2>
+      <p class="sub">You can change this anytime from Settings.</p>
+      <div class="plan-grid" id="plan-grid">
+        <!-- filled by JS -->
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
+        <button class="btn btn-primary" id="btn-2" onclick="goStep(3)" disabled>Continue →</button>
+      </div>
+    </div>
+
+    <!-- ── Step 3: Name + Finish ── -->
+    <div class="step-panel" id="step-3">
+      <h2>Almost done!</h2>
+      <p class="sub">Tell OZY2 your name so it can greet you properly.</p>
+      <div class="err-msg" id="finish-err"></div>
+      <div class="field">
+        <label>Your name (optional)</label>
+        <input type="text" id="user-name" placeholder="Alex" maxlength="40">
+      </div>
+      <div class="field">
+        <label>Theme</label>
+        <select id="theme-select">
+          <option value="dark">🌙 Dark</option>
+          <option value="light">☀️ Light</option>
+        </select>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
+        <button class="btn btn-primary" id="btn-finish" onclick="finish()">
+          Launch OZY2 🚀
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /card -->
+</div><!-- /wizard -->
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+const state = {
+  provider: null,
+  model:    null,
+  apiKey:   "",
+  plan:     null,
+};
+
+let providers = [];
+let packages  = {};
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(async () => {
+  try {
+    const [pRes, pkgRes] = await Promise.all([
+      fetch("/api/setup/providers"),
+      fetch("/api/packages"),
+    ]);
+    providers = (await pRes.json()).providers || [];
+    packages  = await pkgRes.json();
+  } catch (e) {
+    console.warn("Could not load providers/packages", e);
+  }
+  renderProviders();
+  renderPlans();
+})();
+
+// ── Step navigation ───────────────────────────────────────────────────────────
+function goStep(n) {
+  document.querySelectorAll(".step-panel").forEach((p, i) => {
+    p.classList.toggle("active", i === n);
+  });
+  document.querySelectorAll(".step-dot").forEach((d, i) => {
+    d.classList.toggle("active", i === n);
+    d.classList.toggle("done",   i < n);
+  });
+}
+
+// ── Providers ─────────────────────────────────────────────────────────────────
+function renderProviders() {
+  const grid = document.getElementById("provider-grid");
+  grid.innerHTML = providers.map(p => `
+    <button class="provider-btn" onclick="selectProvider('${p.id}')" id="prov-${p.id}">
+      <span class="p-icon">${p.icon}</span>
+      <span class="p-name">${p.label}</span>
+      ${p.free ? '<span class="p-free">✓ Free tier</span>' : ''}
+    </button>
+  `).join("");
+}
+
+function selectProvider(id) {
+  state.provider = id;
+  document.querySelectorAll(".provider-btn").forEach(b => b.classList.remove("selected"));
+  document.getElementById(`prov-${id}`).classList.add("selected");
+
+  const prov = providers.find(p => p.id === id);
+  if (!prov) return;
+
+  // Model selector
+  const mf  = document.getElementById("model-field");
+  const sel = document.getElementById("model-select");
+  if (prov.models && prov.models.length > 1) {
+    sel.innerHTML = prov.models.map(m => `<option value="${m}">${m}</option>`).join("");
+    state.model   = prov.models[0];
+    mf.style.display = "block";
+  } else {
+    state.model = prov.models?.[0] || "";
+    mf.style.display = "none";
+  }
+
+  // Ollama: skip API key step
+  const ollamaNote = document.getElementById("ollama-note");
+  ollamaNote.style.display = id === "ollama" ? "block" : "none";
+
+  document.getElementById("btn-0").disabled = false;
+}
+
+document.getElementById("model-select")?.addEventListener("change", e => {
+  state.model = e.target.value;
+});
+
+// ── API Key ───────────────────────────────────────────────────────────────────
+document.getElementById("step-1").addEventListener("click", () => {});
+
+function updateKeyStep() {
+  const prov = providers.find(p => p.id === state.provider);
+  if (!prov) return;
+  document.getElementById("key-hint").textContent = prov.key_hint;
+  const link = document.getElementById("key-link");
+  link.href        = prov.key_url;
+  link.textContent = `Get your ${prov.label} API key →`;
+  link.style.display = state.provider === "ollama" ? "none" : "inline";
+}
+
+// Patch goStep to update key step on transition
+const _goStep = goStep;
+window.goStep = function(n) {
+  if (n === 1) updateKeyStep();
+  _goStep(n);
+};
+
+function validateKey() {
+  const val = document.getElementById("api-key").value.trim();
+  state.apiKey = val;
+  const isOllama = state.provider === "ollama";
+  document.getElementById("btn-1").disabled = !isOllama && val.length < 8;
+  if (isOllama) document.getElementById("btn-1").disabled = false;
+}
+
+// ── Plans ─────────────────────────────────────────────────────────────────────
+const PLAN_COLORS = { you: "#4f8ef7", pro: "#a855f7", social: "#f43f5e" };
+
+function renderPlans() {
+  const grid = document.getElementById("plan-grid");
+  const tiers = Object.values(packages);
+  grid.innerHTML = tiers.map(t => `
+    <div class="plan-option" onclick="selectPlan('${t.id}')" id="plan-${t.id}">
+      <span class="p-icon">${t.icon}</span>
+      <div class="p-info">
+        <h4>${t.label}</h4>
+        <p>${t.tagline} — <strong>${t.skills?.length || 0} skills</strong></p>
+      </div>
+      <span class="p-badge" style="background:${t.color}">${t.price}</span>
+    </div>
+  `).join("");
+}
+
+function selectPlan(id) {
+  state.plan = id;
+  document.querySelectorAll(".plan-option").forEach(p => p.classList.remove("selected"));
+  const el = document.getElementById(`plan-${id}`);
+  if (el) el.classList.add("selected");
+  document.getElementById("btn-2").disabled = false;
+}
+
+// ── Finish ────────────────────────────────────────────────────────────────────
+async function finish() {
+  const btn = document.getElementById("btn-finish");
+  const err = document.getElementById("finish-err");
+  err.classList.remove("show");
+  btn.disabled  = true;
+  btn.innerHTML = '<span class="spinner"></span> Setting up…';
+
+  const payload = {
+    provider:  state.provider,
+    model:     state.model || "",
+    api_key:   state.provider === "ollama"
+                 ? (document.getElementById("ollama-url")?.value || "http://localhost:11434")
+                 : (document.getElementById("api-key")?.value?.trim() || ""),
+    package:   state.plan || "you",
+    user_name: document.getElementById("user-name")?.value?.trim() || "",
+    theme:     document.getElementById("theme-select")?.value || "dark",
+    language:  "en",
+  };
+
+  try {
+    const res  = await fetch("/api/setup/complete", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      window.location.href = "/";
+    } else {
+      throw new Error(data.error || "Setup failed");
+    }
+  } catch (e) {
+    err.textContent = e.message;
+    err.classList.add("show");
+    btn.disabled  = false;
+    btn.innerHTML = "Launch OZY2 🚀";
+  }
+}
+</script>
+</body>
+</html>

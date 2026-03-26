@@ -4,6 +4,8 @@ from pathlib import Path
 from fastapi import APIRouter, Request
 from api.state import reset_agent
 
+PACKAGES_FILE = Path(__file__).parent.parent.parent / "config" / "packages.json"
+
 router     = APIRouter(tags=["Settings"])
 CONFIG     = Path(__file__).parent.parent.parent / "config" / "settings.json"
 DEFAULTS   = {
@@ -39,3 +41,36 @@ async def save_settings(request: Request):
     write_cfg(cfg)
     reset_agent()   # re-init agent with new config
     return {"ok": True}
+
+
+@router.get("/api/packages")
+async def get_packages():
+    """Return the tier/package definitions from packages.json."""
+    if PACKAGES_FILE.exists():
+        return json.loads(PACKAGES_FILE.read_text())
+    return {}
+
+
+@router.get("/api/packages/active")
+async def get_active_package():
+    """Return currently active package with its skill list."""
+    cfg         = read_cfg()
+    active_id   = cfg.get("package", "full")
+    if not PACKAGES_FILE.exists():
+        return {"package": active_id, "skills": []}
+    packages = json.loads(PACKAGES_FILE.read_text())
+
+    TIER_ORDER  = ["you", "pro", "social"]
+    all_skills  = []
+    for tier_id in TIER_ORDER:
+        tier = packages.get(tier_id, {})
+        all_skills.extend(tier.get("skills", []))
+        if tier_id == active_id:
+            break
+
+    if active_id == "full":
+        all_skills = []
+        for tier in packages.values():
+            all_skills.extend(tier.get("skills", []))
+
+    return {"package": active_id, "tier": packages.get(active_id, {}), "skills": all_skills}

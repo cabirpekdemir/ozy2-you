@@ -1,8 +1,27 @@
 """OZY2 — Register integration tools with the agent."""
 from core.tools import register
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def register_all():
+    """Register core tools + all package tier skills."""
+
+    # ── Package Tier Skills ────────────────────────────────────────────────────
+    # YOU  → everyday tools (weather, search, news, currency, notes, reminders…)
+    # PRO  → professional productivity (github, notion, obsidian, trello, stocks…)
+    # SOCIAL → social & creative (discord, spotify, youtube, debate, email monitor…)
+    import importlib
+    for module_name in ("skills.you_skills", "skills.pro_skills", "skills.social_skills"):
+        try:
+            mod = importlib.import_module(module_name)
+            mod.register_all()
+            logger.info(f"[Skills] Loaded: {module_name}")
+        except Exception as e:
+            logger.warning(f"[Skills] Could not load {module_name}: {e}")
+
+    # ── Core Tools (always available) ──────────────────────────────────────────
     """Call once at startup to register all skill tools."""
 
     # ── Tasks ─────────────────────────────────────────────────

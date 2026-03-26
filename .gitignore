@@ -1,4 +1,4 @@
-# Python
+# ── Python ────────────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
@@ -7,23 +7,57 @@ __pycache__/
 venv/
 .venv/
 *.egg-info/
-dist/
-build/
+.eggs/
 
-# Data & secrets
+# ── Build output ───────────────────────────────────────
+dist/
+build/_work/
+
+# build scripts & specs are committed, binaries are not
+build/linux/appimagetool
+*.AppImage
+*.dmg
+*.exe
+*.deb
+
+# ── User data & secrets (NEVER commit) ────────────────
 data/
 config/settings.json
 config/google_token.json
 config/google_credentials.json
+*.env
+.env*
+secrets/
 
-# OS
+# Template / example configs ARE committed:
+# config/settings.example.json  ✓
+# config/packages.json          ✓
+
+# ── OS ────────────────────────────────────────────────
 .DS_Store
+.DS_Store?
+._*
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# IDE
+# ── IDE ───────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
+*.swo
+*~
+.cursor/
 
-# Logs
+# ── Logs ──────────────────────────────────────────────
 *.log
+logs/
+ozy2.log
+
+# ── Runtime / cache ───────────────────────────────────
+*.sqlite3
+*.db
+*.cache
+.pytest_cache/
+htmlcov/
+.coverage

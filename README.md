@@ -1,278 +1,215 @@
-# ✦ OZY2 — Personal AI Assistant v2.0
+<div align="center">
 
-> A complete rebuild of OZY — modular, English-only, Card OS design, mobile-first PWA.
+# ✦ OZY2
 
-![Python](https://img.shields.io/badge/Python-3.10+-blue)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-green)
-![License](https://img.shields.io/badge/license-private-gray)
+**Your personal AI assistant — runs entirely on your machine.**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue)](https://python.org)
+[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)]()
+
+[Download](#-download) · [Quick Start](#-quick-start) · [Plans](#-plans) · [User Guide](docs/user_guide.md) · [Build from Source](#-build-from-source)
+
+</div>
 
 ---
 
-## Features
+## What is OZY2?
 
-| Category | Features |
+OZY2 is a personal AI assistant that runs locally on your computer. Open it like any app — no terminal needed. It connects to your choice of AI model (Google Gemini, ChatGPT, Claude, or a local Ollama model) and gives you a clean web interface to chat, manage tasks, read emails, browse GitHub, and much more.
+
+**Everything stays on your machine. No account required. No data sent to us.**
+
+---
+
+## ✨ Features
+
+| Category | What it does |
 |---|---|
-| **AI** | Gemini, Claude, GPT-4o, Grok, DeepSeek, Qwen — streaming chat |
-| **Email** | Gmail read, send, reply, trash, search |
-| **Calendar** | Google Calendar — view, create, delete events |
-| **Drive** | Google Drive — browse, search, read documents |
-| **Messaging** | Telegram bot — send/receive messages |
-| **Tasks** | Personal task manager with priorities & due dates |
-| **Memory** | Persistent facts + 200-message conversation history |
-| **Briefing** | Daily morning summary delivered to Telegram |
-| **AI Debate** | 6 AI models debating any topic simultaneously |
-| **Content** | AI content studio — LinkedIn, Twitter, YouTube scripts |
-| **PWA** | Installable on iOS & Android via browser |
+| 💬 **Chat** | Streaming AI chat with full tool use |
+| 📅 **Calendar** | View and create Google Calendar events |
+| 📧 **Gmail** | Read, search and send emails |
+| ✅ **Tasks** | Personal to-do list with priorities |
+| 🧠 **Memory** | Remembers facts about you across sessions |
+| ☀️ **Briefing** | Morning summary: weather, calendar, news, tasks |
+| 🔍 **Web Search** | DuckDuckGo search — no API key needed |
+| 🌤️ **Weather** | Live weather for any city — no API key needed |
+| 📰 **News** | Latest headlines by topic |
+| 💱 **Currency** | Live exchange rates |
+| 🐙 **GitHub** | Search repos, list issues |
+| 🔲 **Notion** | Read and write pages |
+| 📋 **Trello** | Manage boards and cards |
+| 📈 **Stocks** | Live stock prices |
+| ✍️ **Content** | Generate blog posts, captions, ad copy |
+| 💬 **Discord** | Send messages via webhooks |
+| 🎵 **Spotify** | Search tracks and albums |
+| ▶️ **YouTube** | Search videos and get transcripts |
+| ⚔️ **Debate** | Multi-perspective AI debate on any topic |
+| ✈️ **Telegram** | Send and receive messages |
+| + more | Notes, Reminders, Obsidian, WhatsApp… |
 
 ---
 
-## Architecture
+## 📦 Plans
 
-```
-Ozy2/
-├── core/
-│   ├── llm.py              # Multi-provider LLM client
-│   ├── memory.py           # SQLite facts + conversation history
-│   ├── tools.py            # @register() tool registry
-│   ├── agent.py            # Orchestration + streaming
-│   └── scheduler.py        # Cron/interval scheduler
-│
-├── api/
-│   ├── app.py              # FastAPI app
-│   ├── state.py            # Agent singleton
-│   └── routers/
-│       ├── chat.py         # POST /api/chat, GET /api/chat/stream (SSE)
-│       ├── gmail.py        # Gmail CRUD
-│       ├── calendar_router.py
-│       ├── drive_router.py
-│       ├── tasks_router.py
-│       ├── memory_router.py
-│       ├── telegram_router.py
-│       ├── briefing_router.py
-│       ├── settings.py
-│       └── i18n.py
-│
-├── integrations/
-│   ├── gmail.py
-│   ├── calendar_google.py
-│   ├── drive.py
-│   ├── telegram.py
-│   └── tasks_db.py
-│
-├── skills/
-│   └── tools_register.py   # 10 agent tools
-│
-├── ui/
-│   ├── templates/
-│   │   └── index.html      # Card OS layout
-│   ├── static/
-│   │   ├── css/design.css  # Full design system
-│   │   ├── js/
-│   │   │   ├── app.js      # Panel loader, toast, theme
-│   │   │   └── i18n.js     # i18n helper
-│   │   └── panels/         # 17 lazy-loaded panel JS files
-│   └── i18n/
-│       └── en.json         # 91 translation keys
-│
-├── config/                 # gitignored — local secrets only
-│   ├── settings.json
-│   ├── google_token.json
-│   └── google_credentials.json
-│
-├── data/                   # gitignored — local DB files
-│   ├── memory.db
-│   └── tasks.db
-│
-├── debate.py               # Standalone multi-AI debate CLI
-├── OZY2.command            # macOS launch script
-└── Debate.command          # macOS debate launcher
-```
+OZY2 comes in three tiers. You choose during setup and can change anytime from Settings.
+
+| | 🧑 **You** | ⚡ **Pro** | 🌐 **Social** |
+|---|---|---|---|
+| **Who it's for** | Everyday use | Power users | Social & creators |
+| Web Search | ✅ | ✅ | ✅ |
+| Weather | ✅ | ✅ | ✅ |
+| News | ✅ | ✅ | ✅ |
+| Currency | ✅ | ✅ | ✅ |
+| Notes & Reminders | ✅ | ✅ | ✅ |
+| Word / Excel | ✅ | ✅ | ✅ |
+| Gmail | — | ✅ | ✅ |
+| Google Drive | — | ✅ | ✅ |
+| GitHub | — | ✅ | ✅ |
+| Notion / Obsidian | — | ✅ | ✅ |
+| Trello | — | ✅ | ✅ |
+| Stocks | — | ✅ | ✅ |
+| Content Creator | — | ✅ | ✅ |
+| Daily Briefing | — | ✅ | ✅ |
+| Discord | — | — | ✅ |
+| Spotify | — | — | ✅ |
+| YouTube | — | — | ✅ |
+| WhatsApp | — | — | ✅ |
+| Debate Mode | — | — | ✅ |
+| Email Monitor | — | — | ✅ |
 
 ---
 
-## Quick Start
+## 🚀 Download
 
-### 1. Prerequisites
+> Pre-built installers are on the [Releases](../../releases) page.
 
+| Platform | File | Notes |
+|---|---|---|
+| **macOS** 12+ | `OZY2-mac.dmg` | Drag to Applications, double-click |
+| **Windows** 10/11 | `OZY2-Setup.exe` | Standard installer wizard |
+| **Linux** x86_64 | `OZY2-linux-x86_64.AppImage` | No install — just run |
+| **Linux** Debian/Ubuntu | `ozy2_2.0.0_amd64.deb` | `sudo dpkg -i` |
+
+---
+
+## ⚡ Quick Start
+
+### Option 1 — Pre-built app (recommended for end users)
+1. Download the file for your platform from [Releases](../../releases)
+2. Install/open it
+3. A **Setup Wizard** opens in your browser automatically
+4. Enter your API key → choose a plan → enter your name → **Launch OZY2**
+
+### Option 2 — Run from source (for developers)
 ```bash
-# Python 3.10+ required
-python3 --version
-
-# Install dependencies
+git clone https://github.com/yourusername/ozy2.git
+cd ozy2
 pip install -r requirements.txt
+python launcher.py
 ```
+Browser opens at `http://localhost:8081`.
 
-### 2. Configuration
+---
 
-Copy the example config and fill in your keys:
+## 🔑 Getting an API Key
+
+OZY2 needs an API key for its AI brain. Pick any provider:
+
+| Provider | Free tier | Speed | Get Key |
+|---|---|---|---|
+| **Google Gemini** ⭐ | ✅ Yes | Very fast | [aistudio.google.com](https://aistudio.google.com/apikey) |
+| **OpenAI GPT-4o** | ❌ Paid | Fast | [platform.openai.com](https://platform.openai.com/api-keys) |
+| **Anthropic Claude** | ❌ Paid | Fast | [console.anthropic.com](https://console.anthropic.com/settings/keys) |
+| **Ollama (local)** | ✅ Free | Depends on GPU | [ollama.com](https://ollama.com) |
+
+> **Recommended for beginners:** Google Gemini has a generous free tier — no credit card needed.
+
+---
+
+## ⚙️ Configuration
+
+Settings are stored in:
+- **macOS / Linux:** `~/.ozy2/config/settings.json`
+- **Windows:** `%USERPROFILE%\.ozy2\config\settings.json`
+
+All settings can be changed from the **Settings panel** inside the app.
+See [`config/settings.example.json`](config/settings.example.json) for a full reference.
+
+### Google integrations (Gmail, Calendar, Drive)
+Run this once after installing:
+```bash
+python reauth_google.py
+```
+A browser tab opens for Google sign-in. Your token is stored locally — never shared.
+
+---
+
+## 🔨 Build from Source
+
+### Requirements
+- Python 3.11+
+- `pip install pyinstaller pillow pystray`
+- **macOS:** `brew install create-dmg`
+- **Windows:** [Inno Setup 6](https://jrsoftware.org/isinfo.php)
+- **Linux:** `dpkg-dev` (optional, for .deb)
+
+### Build commands
 
 ```bash
-cp config/settings.example.json config/settings.json
+# macOS → dist/OZY2-mac.dmg
+bash build/mac/build_mac.sh
+
+# Windows → dist/OZY2-Setup.exe
+build\windows\build_windows.bat
+
+# Linux → dist/OZY2-linux-x86_64.AppImage + .deb
+bash build/linux/build_linux.sh
 ```
 
-`config/settings.json`:
-```json
-{
-  "provider":        "gemini",
-  "model":           "gemini-2.5-flash",
-  "api_key":         "YOUR_GEMINI_KEY",
-  "telegram_token":  "YOUR_TELEGRAM_BOT_TOKEN",
-  "github_username": "your-username",
-  "user_name":       "Your Name"
-}
+---
+
+## 🗂️ Project Structure
+
+```
+ozy2/
+├── launcher.py              ← Entry point (double-click to start)
+├── api/                     ← FastAPI backend
+│   └── routers/             ← API route handlers
+├── core/                    ← LLM, memory, tools, scheduler
+├── integrations/            ← Gmail, Calendar, Drive, Telegram
+├── skills/
+│   ├── you_skills.py        ← YOU tier: weather, search, news…
+│   ├── pro_skills.py        ← PRO tier: GitHub, Notion, Stocks…
+│   └── social_skills.py     ← SOCIAL tier: Discord, Spotify, YouTube…
+├── ui/
+│   ├── templates/           ← HTML (index + setup wizard)
+│   └── static/panels/       ← 20+ lazy-loaded UI panels
+├── config/
+│   ├── packages.json        ← Plan/tier definitions
+│   └── settings.example.json
+└── build/                   ← Platform build scripts & PyInstaller spec
+    ├── ozy2.spec
+    ├── mac/
+    ├── windows/
+    └── linux/
 ```
 
-### 3. Google OAuth (Gmail, Calendar, Drive)
+---
 
-```bash
-pip install google-auth-oauthlib google-api-python-client
-python3 reauth_google.py
-```
+## 🤝 Contributing
 
-This opens a browser window. Authorize all scopes once — token is saved to `config/google_token.json`.
+Pull requests are welcome!
 
-### 4. Start
+1. Fork the repo
+2. `git checkout -b feature/my-feature`
+3. Commit and push
+4. Open a PR
 
-```bash
-# macOS — double-click
-open OZY2.command
-
-# or terminal
-python3 start.py
-```
-
-Open **http://127.0.0.1:8081** in your browser.
+Please don't commit `config/settings.json`, `config/google_token.json`, or anything in `data/` — these are gitignored for a reason.
 
 ---
 
-## AI Providers
+## 📄 License
 
-| Provider | Model | Key env |
-|---|---|---|
-| Google Gemini | `gemini-2.5-flash` | `api_key` in settings |
-| Anthropic Claude | `claude-sonnet-4-6` | `api_key` in settings |
-| OpenAI | `gpt-4o` | `api_key` in settings |
-| Ollama (local) | `llama3.3`, `mistral`, etc. | no key needed |
-
-Switch provider at any time from **Settings → AI Provider**.
-
----
-
-## API Reference
-
-Interactive API docs are available at **http://127.0.0.1:8081/docs** when OZY2 is running.
-
-### Key endpoints
-
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/api/chat/stream?message=...` | Streaming SSE chat |
-| `POST` | `/api/chat` | Single-turn chat |
-| `GET` | `/api/gmail/messages` | List emails |
-| `POST` | `/api/gmail/send` | Send email |
-| `GET` | `/api/calendar/events` | List calendar events |
-| `POST` | `/api/calendar/events` | Create event |
-| `GET` | `/api/drive/recent` | Recent Drive files |
-| `GET` | `/api/tasks` | List tasks |
-| `POST` | `/api/tasks` | Create task |
-| `GET` | `/api/memory/facts` | Get stored facts |
-| `GET` | `/api/briefing` | Get morning briefing |
-| `GET` | `/api/settings` | Read settings |
-| `POST` | `/api/settings` | Update settings |
-
----
-
-## AI Debate CLI
-
-Run a multi-AI debate from the terminal:
-
-```bash
-# Interactive
-python3 debate.py
-
-# Direct topic
-python3 debate.py "Will AI replace software engineers?"
-
-# 3 rounds, all models
-python3 debate.py "Does free will exist?" --rounds 3 --all
-```
-
-Supports: Gemini · Claude · GPT-4o · Grok · DeepSeek · Qwen
-
----
-
-## Agent Tools
-
-The chat agent has access to 10 built-in tools:
-
-| Tool | Description |
-|---|---|
-| `list_tasks` | List user's tasks |
-| `add_task` | Create a new task |
-| `get_today_events` | Today's calendar events |
-| `get_upcoming_events` | Upcoming events (N days) |
-| `create_calendar_event` | Create a calendar event |
-| `list_emails` | List recent emails |
-| `send_email` | Send an email |
-| `remember` | Save a fact to memory |
-| `recall` | Recall a stored fact |
-| `send_telegram` | Send Telegram message to user |
-
-Example chat: *"Add a task to call my dentist tomorrow"* → agent calls `add_task` automatically.
-
----
-
-## Panels
-
-| Panel | Description |
-|---|---|
-| Chat | AI chat with streaming |
-| Home | Dashboard with stats & quick actions |
-| Tasks | Task manager |
-| Memory | Facts & chat history |
-| Briefing | Daily morning summary |
-| Gmail | Full email client |
-| Calendar | Event viewer & creator |
-| Telegram | Message viewer & sender |
-| Drive | File browser |
-| Projects | Project tracker |
-| Workspace | Unified file access |
-| YouTube | Channel analytics (coming soon) |
-| Content | AI content studio |
-| AI Debate | Multi-model debate arena |
-| Skills | Installed skills overview |
-| Automations | Scheduled tasks |
-| Settings | All configuration |
-
----
-
-## Design System
-
-Card OS — glassmorphism, iOS-inspired depth, dark/light themes.
-
-CSS variables in `ui/static/css/design.css`:
-- `--accent` — primary color (`#6366f1`)
-- `--card-bg` — glass card background
-- `--card-border` — subtle borders
-- `--text-1/2/3` — text hierarchy
-- `--r-sm/md/lg/xl` — border radius scale
-
----
-
-## i18n
-
-All UI strings are key-based via `ui/i18n/en.json`.
-
-```javascript
-// In any panel JS
-t('chat.empty')          // → "Start a conversation"
-t('nav.gmail')           // → "Gmail"
-```
-
-To add a language: create `ui/i18n/fr.json` with the same keys.
-
----
-
-## License
-
-Private — all rights reserved.
+[MIT](LICENSE) © 2026 OZY2

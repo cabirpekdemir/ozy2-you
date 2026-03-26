@@ -73,6 +73,7 @@ templates = Jinja2Templates(directory=str(TEMPLATES))
 from api.routers.chat         import router as chat_router
 from api.routers.i18n         import router as i18n_router
 from api.routers.settings     import router as settings_router
+from api.routers.setup_router import router as setup_router
 from api.routers.gmail        import router as gmail_router
 from api.routers.calendar_router  import router as calendar_router
 from api.routers.drive_router     import router as drive_router
@@ -81,6 +82,7 @@ from api.routers.memory_router    import router as memory_router
 from api.routers.telegram_router  import router as telegram_router
 from api.routers.briefing_router  import router as briefing_router
 
+app.include_router(setup_router)
 app.include_router(chat_router)
 app.include_router(i18n_router)
 app.include_router(settings_router)

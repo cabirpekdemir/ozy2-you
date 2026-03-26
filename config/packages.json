@@ -1,0 +1,68 @@
+{
+  "you": {
+    "id":          "you",
+    "label":       "OZY2 You",
+    "tagline":     "Your everyday AI companion",
+    "color":       "#4f8ef7",
+    "icon":        "🧑",
+    "price":       "Free",
+    "skills": [
+      { "id": "get_weather",         "label": "Weather",           "icon": "🌤️",  "desc": "Real-time weather & forecasts for any city" },
+      { "id": "web_search",          "label": "Web Search",        "icon": "🔍",  "desc": "Search the web with DuckDuckGo, no API key needed" },
+      { "id": "get_news",            "label": "News",              "icon": "📰",  "desc": "Top headlines by topic or keyword" },
+      { "id": "convert_currency",    "label": "Currency",          "icon": "💱",  "desc": "Live exchange rates and currency conversion" },
+      { "id": "summarize_text",      "label": "Summarizer",        "icon": "📝",  "desc": "Summarize any text, URL or document" },
+      { "id": "create_document",     "label": "Word / DOCX",       "icon": "📄",  "desc": "Create and edit Word documents" },
+      { "id": "create_spreadsheet",  "label": "Excel / XLSX",      "icon": "📊",  "desc": "Generate spreadsheets with formulas" },
+      { "id": "add_note",            "label": "Notes",             "icon": "🗒️",  "desc": "Add and list notes (Apple Notes / local)" },
+      { "id": "add_reminder",        "label": "Reminders",         "icon": "⏰",  "desc": "Set and manage reminders" },
+      { "id": "list_tasks",          "label": "Tasks",             "icon": "✅",  "desc": "Manage your to-do list" },
+      { "id": "remember",            "label": "Memory",            "icon": "🧠",  "desc": "Remember and recall facts about you" },
+      { "id": "get_today_events",    "label": "Calendar",          "icon": "📅",  "desc": "View and create calendar events" }
+    ]
+  },
+
+  "pro": {
+    "id":          "pro",
+    "label":       "OZY2 Pro",
+    "tagline":     "Productivity powerhouse",
+    "color":       "#a855f7",
+    "icon":        "⚡",
+    "price":       "Pro",
+    "includes":    "you",
+    "skills": [
+      { "id": "list_emails",         "label": "Gmail",             "icon": "📧",  "desc": "Read, search and send emails" },
+      { "id": "list_drive_files",    "label": "Google Drive",      "icon": "💾",  "desc": "Browse, upload and manage Drive files" },
+      { "id": "search_github",       "label": "GitHub",            "icon": "🐙",  "desc": "Search repos, list issues, create PRs" },
+      { "id": "search_notion",       "label": "Notion",            "icon": "🔲",  "desc": "Read and write Notion pages and databases" },
+      { "id": "search_obsidian",     "label": "Obsidian",          "icon": "💎",  "desc": "Query and add notes in your Obsidian vault" },
+      { "id": "list_trello_boards",  "label": "Trello",            "icon": "📋",  "desc": "Manage Trello boards, lists and cards" },
+      { "id": "get_stock_price",     "label": "Stocks",            "icon": "📈",  "desc": "Live stock prices, charts and company info" },
+      { "id": "generate_content",    "label": "Content Creator",   "icon": "✍️",  "desc": "Generate blog posts, captions, ad copy" },
+      { "id": "create_lesson",       "label": "Lesson Planner",    "icon": "🎓",  "desc": "Create structured lessons and quizzes" },
+      { "id": "list_projects",       "label": "Projects",          "icon": "🗂️",  "desc": "Track projects, milestones and notes" },
+      { "id": "daily_briefing",      "label": "Daily Briefing",    "icon": "☀️",  "desc": "Morning summary: weather, calendar, news, tasks" }
+    ]
+  },
+
+  "social": {
+    "id":          "social",
+    "label":       "OZY2 Social",
+    "tagline":     "Your social & creative layer",
+    "color":       "#f43f5e",
+    "icon":        "🌐",
+    "price":       "Social",
+    "includes":    "pro",
+    "skills": [
+      { "id": "post_social",         "label": "Social Media",      "icon": "📲",  "desc": "Draft and schedule posts for X, Instagram, LinkedIn" },
+      { "id": "send_discord",        "label": "Discord",           "icon": "💬",  "desc": "Send messages and manage Discord channels" },
+      { "id": "search_spotify",      "label": "Spotify",           "icon": "🎵",  "desc": "Search tracks, control playback, get recommendations" },
+      { "id": "identify_music",      "label": "Music ID",          "icon": "🎶",  "desc": "Identify songs and fetch lyrics" },
+      { "id": "send_whatsapp",       "label": "WhatsApp",          "icon": "💚",  "desc": "Send WhatsApp messages and check chats" },
+      { "id": "search_youtube",      "label": "YouTube",           "icon": "▶️",  "desc": "Search videos, get transcripts and summaries" },
+      { "id": "start_debate",        "label": "Debate Mode",       "icon": "⚔️",  "desc": "Multi-AI structured debate on any topic" },
+      { "id": "monitor_emails",      "label": "Email Monitor",     "icon": "🔔",  "desc": "Watch inbox for keywords and get instant alerts" },
+      { "id": "send_telegram",       "label": "Telegram",          "icon": "✈️",  "desc": "Send and receive Telegram messages" }
+    ]
+  }
+}
