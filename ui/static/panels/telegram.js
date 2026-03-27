@@ -40,6 +40,12 @@ function init_telegram(el) {
 
   checkTelegramStatus();
   loadTelegramUpdates();
+
+  // Auto-refresh every 8 seconds — staggered to reduce multi-instance conflict
+  const jitter = Math.floor(Math.random() * 4000);
+  setTimeout(() => {
+    window._tgPoll = setInterval(loadTelegramUpdates, 8000);
+  }, jitter);
 }
 
 async function checkTelegramStatus() {
