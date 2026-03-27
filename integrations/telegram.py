@@ -81,11 +81,14 @@ async def get_updates(limit: int = 20, offset: int = 0) -> list:
             uid = from_user.get("id", 0)
             if allowed and uid not in allowed:
                 continue
+            ts = msg.get("date", 0)
+            from datetime import datetime, timezone
+            date_str = datetime.fromtimestamp(ts, tz=timezone.utc).isoformat() if ts else ""
             result.append({
                 "update_id": u.get("update_id"),
                 "from":      from_user.get("first_name", "Unknown"),
                 "text":      msg.get("text", ""),
-                "date":      msg.get("date", ""),
+                "date":      date_str,
             })
         return result
     except Exception as e:
