@@ -34,11 +34,10 @@ async def send(req: SendRequest):
 @router.get("/status")
 async def status():
     try:
-        import telegram
-        from integrations.telegram import _get_token
-        token = _get_token()
-        bot   = telegram.Bot(token=token)
-        me    = await bot.get_me()
-        return {"ok": True, "username": me.username, "name": me.first_name}
+        from integrations.telegram import get_me
+        me = await get_me()
+        if me:
+            return {"ok": True, "username": me.get("username"), "name": me.get("first_name")}
+        return {"ok": False, "error": "Bot not reachable"}
     except Exception as e:
         return {"ok": False, "error": str(e)}
