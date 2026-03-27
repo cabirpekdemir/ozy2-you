@@ -71,24 +71,36 @@ async function loadTelegramUpdates() {
     const r = await fetch(`/api/telegram/updates?limit=50`);
     const d = await r.json();
     if (d.ok && d.messages.length) {
-      el.innerHTML = d.messages.map(m => `
-        <div style="display:flex;gap:8px;align-items:flex-start">
-          <div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;
-            background:linear-gradient(135deg,#2AABEE,#229ED9);
-            display:flex;align-items:center;justify-content:center">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.67 4.25 12.79c-.64-.204-.657-.64.135-.954l11.57-4.461c.537-.194 1.006.131.839.845z"/>
-            </svg>
-          </div>
-          <div>
-            <div style="font-size:11px;color:var(--text-3);margin-bottom:3px">${m.from} · ${m.date?.substring(11,16) || ''}</div>
-            <div style="background:var(--card-bg);border:1px solid var(--card-border);
+      el.innerHTML = d.messages.map(m => {
+        const time    = m.date?.substring(11,16) || '';
+        const typeIcons = { voice:'🎤', audio:'🎵', photo:'📷', document:'📎', sticker:'🎭', text:'' };
+        const typeIcon  = typeIcons[m.type] || '';
+        const isVoice   = m.type === 'voice';
+        const bubble    = isVoice
+          ? `<div style="background:rgba(79,142,247,.12);border:1px solid rgba(79,142,247,.3);
               padding:10px 14px;border-radius:4px 14px 14px 14px;font-size:14px;line-height:1.5">
-              ${m.text || '(media)'}
+              ${typeIcon} <i>${m.text || '🎤 Sesli mesaj'}</i>
+              ${m.duration ? `<span style="font-size:11px;color:var(--text-3);margin-left:6px">${m.duration}s</span>` : ''}
+            </div>`
+          : `<div style="background:var(--card-bg);border:1px solid var(--card-border);
+              padding:10px 14px;border-radius:4px 14px 14px 14px;font-size:14px;line-height:1.5">
+              ${typeIcon ? typeIcon + ' ' : ''}${m.text || '(media)'}
+            </div>`;
+        return `
+          <div style="display:flex;gap:8px;align-items:flex-start">
+            <div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;
+              background:linear-gradient(135deg,#2AABEE,#229ED9);
+              display:flex;align-items:center;justify-content:center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.67 4.25 12.79c-.64-.204-.657-.64.135-.954l11.57-4.461c.537-.194 1.006.131.839.845z"/>
+              </svg>
             </div>
-          </div>
-        </div>
-      `).join('');
+            <div style="flex:1;min-width:0">
+              <div style="font-size:11px;color:var(--text-3);margin-bottom:3px">${m.from} · ${time}</div>
+              ${bubble}
+            </div>
+          </div>`;
+      }).join('');
       el.scrollTop = el.scrollHeight;
     } else if (d.ok) {
       el.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-3)">

@@ -37,6 +37,10 @@ async def lifespan(app: FastAPI):
     get_agent()
     scheduler.start()
 
+    # ── Telegram: mesaj al + AI ile otomatik cevapla (her 8 saniye) ─────────
+    from integrations.telegram import poll_and_reply
+    scheduler.add_interval("telegram_poller", poll_and_reply, seconds=8, delay=10)
+
     # ── Günde 2 kez otomatik sağlık kontrolü (09:00 ve 21:00) ────────────────
     from core.health_check import health_check_and_notify
     scheduler.add_daily("health_check_morning", health_check_and_notify, hour=9,  minute=0)

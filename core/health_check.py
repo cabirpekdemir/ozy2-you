@@ -33,14 +33,14 @@ CHECKS = [
     ("Core",         "🔐",  "Auth Durumu",      "GET", "/api/auth/status",           "ok",        True),
 
     # Google
-    ("Google",       "🔗",  "Google OAuth",     "GET", "/api/google/status",         "connected", False),
-    ("Google",       "📧",  "Gmail",            "GET", "/api/gmail/messages?max_results=1", "ok", False),
-    ("Google",       "📅",  "Calendar",         "GET", "/api/calendar/events/today", "ok",        False),
-    ("Google",       "💾",  "Drive",            "GET", "/api/drive/files?max_results=1", "ok",    False),
+    ("Google",       "🔗",  "Google OAuth",     "GET", "/api/google/status",              "connected", False),
+    ("Google",       "📧",  "Gmail",            "GET", "/api/gmail/messages?max_results=1","ok",        False),
+    ("Google",       "📅",  "Calendar",         "GET", "/api/calendar/today",             "ok",        False),
+    ("Google",       "💾",  "Drive",            "GET", "/api/drive/files?max_results=1",  "ok",        False),
 
     # Üretkenlik
-    ("Üretkenlik",   "✅",  "Tasks",            "GET", "/api/tasks",                 "ok",        True),
-    ("Üretkenlik",   "🧠",  "Memory",           "GET", "/api/memory",                "ok",        True),
+    ("Üretkenlik",   "✅",  "Tasks",            "GET", "/api/tasks",                      "ok",        True),
+    ("Üretkenlik",   "🧠",  "Memory",           "GET", "/api/memory/facts",               "ok",        True),
     ("Üretkenlik",   "☀️",  "Briefing",         "GET", "/api/briefing",              "ok",        True),
 
     # İletişim

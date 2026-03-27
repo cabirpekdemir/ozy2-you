@@ -476,10 +476,43 @@ async function updateRemoteInfo(enabled) {
 
 // ── Health Check ──────────────────────────────────────────────────────────────
 
+// Tüm testlerin tanımı (health_check.py ile senkron)
+const HEALTH_TESTS = [
+  { category:'Core',       emoji:'⚙️',  name:'Settings API'    },
+  { category:'Core',       emoji:'🔐',  name:'Auth Durumu'     },
+  { category:'Google',     emoji:'🔗',  name:'Google OAuth'    },
+  { category:'Google',     emoji:'📧',  name:'Gmail'           },
+  { category:'Google',     emoji:'📅',  name:'Calendar'        },
+  { category:'Google',     emoji:'💾',  name:'Drive'           },
+  { category:'Üretkenlik', emoji:'✅',  name:'Tasks'           },
+  { category:'Üretkenlik', emoji:'🧠',  name:'Memory'          },
+  { category:'Üretkenlik', emoji:'☀️',  name:'Briefing'        },
+  { category:'İletişim',   emoji:'✈️',  name:'Telegram Bot'    },
+  { category:'Medya',      emoji:'▶️',  name:'YouTube Kanallar'},
+  { category:'Medya',      emoji:'📖',  name:'Kitap Takipçi'   },
+  { category:'Akıllı Ev',  emoji:'🏠',  name:'Smart Home'      },
+];
+
 async function healthRun() {
   const el = document.getElementById('health-result');
   if (!el) return;
-  el.innerHTML = '<span style="color:var(--text-3);font-size:13px">⏳ Test ediliyor...</span>';
+
+  // 1. Önce tüm testleri "bekliyor" olarak göster
+  const cats = {};
+  HEALTH_TESTS.forEach(t => { cats[t.category] = cats[t.category] || []; cats[t.category].push(t); });
+  let skeleton = `<div style="background:var(--bg3);border-radius:10px;padding:12px">
+    <div style="font-size:13px;color:var(--text-3);margin-bottom:10px">⏳ Testler çalışıyor...</div>`;
+  for (const [cat, items] of Object.entries(cats)) {
+    skeleton += `<div style="font-weight:600;font-size:12px;margin:8px 0 4px">⬜ ${cat}</div>`;
+    items.forEach(t => {
+      skeleton += `<div style="padding:2px 0 2px 12px;font-size:12px;color:var(--text-3)">
+        ⏳ ${t.emoji} ${t.name}</div>`;
+    });
+  }
+  skeleton += '</div>';
+  el.innerHTML = skeleton;
+
+  // 2. Sonuçları al
   try {
     const r = await fetch('/api/health');
     const d = await r.json();
@@ -490,32 +523,35 @@ async function healthRun() {
     const icon  = pct === 100 ? '✅' : pct >= 70 ? '🟡' : '🔴';
 
     // Kategorilere göre grupla
-    const cats = {};
+    const resCats = {};
     (d.results || []).forEach(r => {
-      cats[r.category] = cats[r.category] || [];
-      cats[r.category].push(r);
+      resCats[r.category] = resCats[r.category] || [];
+      resCats[r.category].push(r);
     });
 
     let rows = '';
-    for (const [cat, items] of Object.entries(cats)) {
+    for (const [cat, items] of Object.entries(resCats)) {
       const catPass = items.filter(i => i.passed).length;
       const catIcon = catPass === items.length ? '🟢' : catPass > 0 ? '🟡' : '🔴';
       rows += `<div style="font-weight:600;font-size:12px;margin:8px 0 4px">${catIcon} ${cat}</div>`;
       items.forEach(i => {
         const mark   = i.passed ? '✅' : '❌';
         const ms     = i.passed ? `<span style="color:var(--text-3);font-size:11px"> ${i.ms}ms</span>` : '';
-        const detail = !i.passed && i.detail ? `<span style="color:var(--red);font-size:11px"> — ${i.detail.substring(0,50)}</span>` : '';
-        rows += `<div style="padding:2px 0 2px 12px;font-size:12px">${mark} ${i.emoji} ${i.name}${ms}${detail}</div>`;
+        const detail = !i.passed && i.detail
+          ? `<span style="color:var(--red);font-size:11px"> — ${i.detail.substring(0,55)}</span>` : '';
+        const req    = i.required && !i.passed
+          ? `<span style="background:#ef444420;color:var(--red);font-size:10px;padding:1px 5px;border-radius:4px;margin-left:4px">KRİTİK</span>` : '';
+        rows += `<div style="padding:3px 0 3px 12px;font-size:12px">${mark} ${i.emoji} ${i.name}${ms}${req}${detail}</div>`;
       });
     }
 
     el.innerHTML = `
       <div style="background:var(--bg3);border-radius:10px;padding:12px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="font-size:20px">${icon}</span>
-          <div>
-            <div style="font-weight:700;font-size:14px;color:${color}">${pct}% Sağlıklı</div>
-            <div style="font-size:11px;color:var(--text-3)">${d.passed}/${d.total} test geçti · ${d.duration_ms}ms</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+          <span style="font-size:24px">${icon}</span>
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:15px;color:${color}">${pct}% Sağlıklı</div>
+            <div style="font-size:11px;color:var(--text-3)">${d.passed}/${d.total} test · ${d.duration_ms}ms</div>
           </div>
         </div>
         ${rows}
