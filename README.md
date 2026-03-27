@@ -8,7 +8,7 @@
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue)](https://python.org)
 [![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)]()
 
-[Download](#-download) · [Quick Start](#-quick-start) · [Plans](#-plans) · [User Guide](docs/user_guide.md) · [Build from Source](#-build-from-source)
+[Download](#-download) · [Quick Start](#-quick-start) · [Plans](#-plans) · [User Guide](docs/user_guide.md) · [Skills Reference](docs/skills_reference.md) · [Developer Guide](docs/developer_guide.md)
 
 </div>
 
@@ -103,7 +103,7 @@ OZY2 comes in three tiers. You choose during setup and can change anytime from S
 
 ### Option 2 — Run from source (for developers)
 ```bash
-git clone https://github.com/yourusername/ozy2.git
+git clone https://github.com/cabirpekdemir/ozy2.git
 cd ozy2
 pip install -r requirements.txt
 python launcher.py

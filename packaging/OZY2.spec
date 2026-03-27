@@ -80,12 +80,21 @@ a = Analysis(
         "google.genai",
         "openai",
         "anthropic",
-        # Tray
+        # Tray — platform backends
         "pystray",
+        "pystray._base",
+        "pystray._darwin",     # macOS backend
+        "pystray._win32",      # Windows backend
+        "pystray._xorg",       # Linux X11 backend
         "PIL",
         "PIL.Image",
         "PIL.ImageDraw",
         "PIL.ImageFont",
+        # macOS / PyObjC (required by pystray on Darwin)
+        "objc",
+        "AppKit",
+        "Foundation",
+        "Cocoa",
     ],
     hookspath=[],
     hooksconfig={},

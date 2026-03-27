@@ -8,11 +8,13 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request as FastAPIRequest
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from api.state import get_agent
 from core.scheduler import scheduler
@@ -39,6 +41,21 @@ async def lifespan(app: FastAPI):
     logger.info("[OZY2] Shut down.")
 
 
+# ── Security Middleware: Localhost-only request guard ─────────────────────────
+class LocalhostOnlyMiddleware(BaseHTTPMiddleware):
+    """Reject any request whose Host header is not localhost / 127.0.0.1."""
+    _ALLOWED = {"localhost", "127.0.0.1"}
+
+    async def dispatch(self, request: FastAPIRequest, call_next):
+        host = request.headers.get("host", "").split(":")[0]
+        if host not in self._ALLOWED:
+            return JSONResponse(
+                {"ok": False, "error": "Access denied — OZY2 is local-only."},
+                status_code=403,
+            )
+        return await call_next(request)
+
+
 app = FastAPI(
     title="OZY2 — Personal AI Assistant",
     version="2.0.0",
@@ -62,6 +79,21 @@ Run `python3 reauth_google.py` once to authorize.
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# ── CORS: only allow requests from localhost origins ──────────────────────────
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:8081",
+        "http://127.0.0.1:8081",
+    ],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "DELETE", "PUT"],
+    allow_headers=["Content-Type"],
+)
+
+# ── Localhost-only guard ───────────────────────────────────────────────────────
+app.add_middleware(LocalhostOnlyMiddleware)
 
 # Static files
 app.mount("/static", StaticFiles(directory=str(STATIC)), name="static")

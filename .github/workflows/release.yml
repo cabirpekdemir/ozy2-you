@@ -38,12 +38,14 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
+          # macOS: pystray needs PyObjC to drive the menu bar icon
+          pip install pyobjc-core pyobjc-framework-Cocoa pyobjc-framework-Quartz
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller packaging/OZY2.spec --clean --noconfirm
+          pyinstaller packaging/OZY2.spec --clean --noconfirm 2>&1 | tee pyinstaller.log
           # Verify the .app exists
-          test -d dist/OZY2.app
+          test -d dist/OZY2.app || (cat pyinstaller.log && exit 1)
 
       - name: Code-sign (ad-hoc — works without Apple Developer account)
         run: |
@@ -92,11 +94,16 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
+          # Windows: ensure pywin32 is available for pystray
+          pip install pywin32
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller packaging/OZY2.spec --clean --noconfirm
-          if (!(Test-Path "dist\OZY2\OZY2.exe")) { exit 1 }
+          pyinstaller packaging/OZY2.spec --clean --noconfirm 2>&1 | Tee-Object pyinstaller.log
+          if (!(Test-Path "dist\OZY2\OZY2.exe")) {
+            Get-Content pyinstaller.log | Select-Object -Last 50
+            exit 1
+          }
 
       - name: Install NSIS
         run: choco install nsis --no-progress -y

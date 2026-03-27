@@ -75,6 +75,21 @@ const PlansPanel = (() => {
         ? `<div class="plan-includes">✅ Everything in <strong>${packages[tier.includes]?.label || tier.includes}</strong>, plus:</div>`
         : "";
 
+      const isComingSoon = !!tier.coming_soon;
+      if (isComingSoon) card.classList.add("plan-card-soon");
+
+      const badgeHtml = isComingSoon
+        ? `<span class="plan-badge plan-badge-soon">Coming Soon</span>`
+        : `<span class="plan-badge" style="background:${tier.color}">${tier.price}</span>`;
+
+      const actionHtml = isComingSoon
+        ? `<div class="plan-soon-note">🔜 Coming soon — ${tier.price}</div>`
+        : `<button class="plan-btn ${isCurrent ? 'plan-btn-active' : ''}"
+                   data-tier="${tier.id}"
+                   ${isCurrent ? "disabled" : ""}>
+             ${isCurrent ? "✓ Active" : "Activate"}
+           </button>`;
+
       card.innerHTML = `
         <div class="plan-header">
           <span class="plan-icon">${tier.icon}</span>
@@ -82,18 +97,16 @@ const PlansPanel = (() => {
             <h3 class="plan-name">${tier.label}</h3>
             <p class="plan-tagline">${tier.tagline}</p>
           </div>
-          <span class="plan-badge" style="background:${tier.color}">${tier.price}</span>
+          ${badgeHtml}
         </div>
         ${includesNote}
         <ul class="plan-skills">${skillsHtml}</ul>
-        <button class="plan-btn ${isCurrent ? 'plan-btn-active' : ''}"
-                data-tier="${tier.id}"
-                ${isCurrent ? "disabled" : ""}>
-          ${isCurrent ? "✓ Active" : "Activate"}
-        </button>
+        ${actionHtml}
       `;
 
-      card.querySelector(".plan-btn").addEventListener("click", () => activateTier(tier.id));
+      if (!isComingSoon) {
+        card.querySelector(".plan-btn").addEventListener("click", () => activateTier(tier.id));
+      }
       grid.appendChild(card);
     });
   }
@@ -232,6 +245,29 @@ const PlansPanel = (() => {
       background: var(--bg-subtle, #2a2a2a);
       color: var(--text-muted, #888);
       cursor: default;
+    }
+    .plan-card-soon {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    .plan-badge-soon {
+      margin-left: auto;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #fff;
+      background: #3a3f55;
+      white-space: nowrap;
+    }
+    .plan-soon-note {
+      margin-top: auto;
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text-muted, #888);
+      padding: 10px;
+      border: 1px dashed var(--border, #333);
+      border-radius: 10px;
     }
   `;
   document.head.appendChild(style);

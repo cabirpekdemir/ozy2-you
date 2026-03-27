@@ -7,7 +7,7 @@
   <meta name="description" content="OZY2 is a local-first AI assistant that runs entirely on your machine. No cloud, no subscriptions, no one watching your data. macOS · Windows · Linux.">
   <meta property="og:title" content="OZY2 — Your Personal AI Assistant">
   <meta property="og:description" content="Local-first AI. Runs on your machine. macOS · Windows · Linux.">
-  <meta property="og:image" content="https://ozy2.com/og.png">
+  <meta property="og:image" content="https://ozy2.com/social_preview.png">
   <meta property="og:url" content="https://ozy2.com">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/png" href="favicon.png">
@@ -64,8 +64,12 @@
       display: flex; align-items: center;
       height: 60px; gap: 32px;
     }
-    .nav-logo { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.5px; }
-    .nav-logo span { color: var(--accent); }
+    .nav-logo img {
+      height: 36px; width: auto; display: block;
+      background: #fff;
+      border-radius: 8px;
+      padding: 4px 10px;
+    }
     .nav-links { display: flex; gap: 24px; margin-left: auto; }
     .nav-links a {
       color: var(--muted); text-decoration: none;
@@ -310,6 +314,29 @@
       padding: 8px 10px; background: #0b0d14;
       border-radius: 8px;
     }
+    .plan-card-soon {
+      opacity: 0.55;
+      pointer-events: none;
+    }
+    .plan-card-soon:hover {
+      transform: none;
+      border-color: var(--border);
+      box-shadow: none;
+    }
+    .plan-badge-soon {
+      margin-left: auto; padding: 4px 12px; border-radius: 20px;
+      font-size: 0.72rem; font-weight: 700; color: #fff;
+      background: #3a3f55;
+    }
+    .plan-soon-note {
+      margin-top: auto;
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--muted);
+      padding: 10px;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+    }
 
     /* ── Features ── */
     .features { padding: 100px 0; }
@@ -382,8 +409,7 @@
       display: flex; align-items: center; justify-content: space-between;
       flex-wrap: wrap; gap: 16px;
     }
-    .footer-logo { font-size: 1rem; font-weight: 800; }
-    .footer-logo span { color: var(--accent); }
+    .footer-logo img { height: 28px; width: auto; display: block; filter: brightness(0) invert(1); opacity: 0.8; }
     .footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
     .footer-links a {
       color: var(--muted); text-decoration: none;
@@ -405,7 +431,7 @@
 
 <!-- ── Nav ──────────────────────────────────────────────────────────────────── -->
 <nav>
-  <div class="nav-logo">✦ OZY<span>2</span></div>
+  <div class="nav-logo"><img src="logo.png" alt="OZY2"></div>
   <div class="nav-links">
     <a href="#plans">Plans</a>
     <a href="#features">Features</a>
@@ -538,7 +564,7 @@
   <div class="container">
     <div class="section-label">Plans</div>
     <div class="section-title">Pick your power level</div>
-    <p class="section-sub">Start with YOU — it's free. Unlock more skills as you need them. Switch anytime, no reinstall required.</p>
+    <p class="section-sub">Start with YOU — it's free, forever. Pro &amp; Social tiers are coming soon.</p>
 
     <div class="plans-grid">
 
@@ -565,14 +591,14 @@
       </div>
 
       <!-- PRO -->
-      <div class="plan-card" style="--tier-color:#a855f7">
+      <div class="plan-card plan-card-soon" style="--tier-color:#a855f7">
         <div class="plan-header">
           <div class="plan-icon">⚡</div>
           <div>
             <div class="plan-name">OZY2 Pro</div>
             <div class="plan-tagline">Productivity powerhouse</div>
           </div>
-          <div class="plan-badge">Pro</div>
+          <div class="plan-badge-soon">Coming Soon</div>
         </div>
         <div class="plan-includes">✅ Everything in <strong>OZY2 You</strong>, plus:</div>
         <ul class="plan-skills">
@@ -586,17 +612,18 @@
           <li class="plan-skill"><span class="plan-skill-icon">✍️</span><span><strong>Content Creator</strong><small>Blog posts, captions, ad copy</small></span></li>
           <li class="plan-skill"><span class="plan-skill-icon">☀️</span><span><strong>Daily Briefing</strong><small>Morning summary of everything</small></span></li>
         </ul>
+        <div class="plan-soon-note">🔜 Coming soon — $3.99/mo</div>
       </div>
 
       <!-- SOCIAL -->
-      <div class="plan-card" style="--tier-color:#f43f5e">
+      <div class="plan-card plan-card-soon" style="--tier-color:#f43f5e">
         <div class="plan-header">
           <div class="plan-icon">🌐</div>
           <div>
             <div class="plan-name">OZY2 Social</div>
-            <div class="plan-tagline">Your social & creative layer</div>
+            <div class="plan-tagline">Your social &amp; creative layer</div>
           </div>
-          <div class="plan-badge">Social</div>
+          <div class="plan-badge-soon">Coming Soon</div>
         </div>
         <div class="plan-includes">✅ Everything in <strong>OZY2 Pro</strong>, plus:</div>
         <ul class="plan-skills">
@@ -608,6 +635,7 @@
           <li class="plan-skill"><span class="plan-skill-icon">⚔️</span><span><strong>Debate Mode</strong><small>Multi-AI structured debates</small></span></li>
           <li class="plan-skill"><span class="plan-skill-icon">🔔</span><span><strong>Email Monitor</strong><small>Watch inbox for keywords</small></span></li>
         </ul>
+        <div class="plan-soon-note">🔜 Coming soon — $5.99/mo</div>
       </div>
 
     </div>
@@ -706,7 +734,7 @@
 <!-- ── Footer ─────────────────────────────────────────────────────────────────── -->
 <footer>
   <div class="footer-inner">
-    <div class="footer-logo">✦ OZY<span>2</span></div>
+    <div class="footer-logo"><img src="logo.png" alt="OZY2"></div>
     <div class="footer-links">
       <a href="https://github.com/cabirpekdemir/ozy2" target="_blank">GitHub</a>
       <a href="https://github.com/cabirpekdemir/ozy2/releases" target="_blank">Releases</a>

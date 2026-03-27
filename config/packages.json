@@ -28,7 +28,8 @@
     "tagline":     "Productivity powerhouse",
     "color":       "#a855f7",
     "icon":        "⚡",
-    "price":       "Pro",
+    "price":       "$3.99/mo",
+    "coming_soon": true,
     "includes":    "you",
     "skills": [
       { "id": "list_emails",         "label": "Gmail",             "icon": "📧",  "desc": "Read, search and send emails" },
@@ -51,7 +52,8 @@
     "tagline":     "Your social & creative layer",
     "color":       "#f43f5e",
     "icon":        "🌐",
-    "price":       "Social",
+    "price":       "$5.99/mo",
+    "coming_soon": true,
     "includes":    "pro",
     "skills": [
       { "id": "post_social",         "label": "Social Media",      "icon": "📲",  "desc": "Draft and schedule posts for X, Instagram, LinkedIn" },
