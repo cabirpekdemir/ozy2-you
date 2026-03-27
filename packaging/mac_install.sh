@@ -171,7 +171,7 @@ echo "  → Gemini ücretsiz: https://aistudio.google.com"
 echo ""
 
 # Launch immediately
-read -p "  Şimdi başlatayım mı? (y/n): " -n 1 -r
+read -p "  Şimdi başlatayım mı? (y/n): " -n 1 -r < /dev/tty
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]; then
   open "$APP"
