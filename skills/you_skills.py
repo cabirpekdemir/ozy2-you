@@ -457,3 +457,438 @@ end tell
             except Exception as e:
                 return {"error": str(e)}
         return {"error": "Apple Reminders only supported on macOS"}
+
+    # ── Outfit of the Day ─────────────────────────────────────────────────────
+    @register(
+        name="outfit_of_day",
+        description=(
+            "Suggest an outfit for today based on weather and occasion. "
+            "Use for: 'what should I wear', 'outfit for today', 'dress suggestion', 'bugün ne giysem'."
+        ),
+        params={
+            "city":      {"type": "string",  "description": "City for weather check (default: Istanbul)"},
+            "occasion":  {"type": "string",  "description": "Occasion: casual | work | formal | sport | date (default: casual)"},
+            "style_pref":{"type": "string",  "description": "Style preferences (e.g. minimalist, colorful, classic)"},
+        },
+        package="you",
+    )
+    async def _outfit_of_day(city: str = "Istanbul", occasion: str = "casual", style_pref: str = ""):
+        import urllib.request, urllib.parse, json
+        # Get current weather
+        try:
+            geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={urllib.parse.quote(city)}&count=1"
+            with urllib.request.urlopen(geo_url, timeout=8) as r:
+                geo = json.loads(r.read())
+            res = geo.get("results", [])
+            if res:
+                lat, lon = res[0]["latitude"], res[0]["longitude"]
+                wurl = (f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}"
+                        "&current=temperature_2m,weathercode,precipitation_probability&timezone=auto")
+                with urllib.request.urlopen(wurl, timeout=8) as r:
+                    wdata = json.loads(r.read())
+                cur = wdata["current"]
+                temp  = cur["temperature_2m"]
+                code  = cur["weathercode"]
+                rain  = cur.get("precipitation_probability", 0)
+                weather_summary = f"{temp}°C, {'rainy' if rain > 40 else 'dry'}, weather code {code}"
+            else:
+                weather_summary = "unknown weather"
+        except Exception:
+            weather_summary = "unknown weather"
+
+        style_note = f" Style preference: {style_pref}." if style_pref else ""
+        return {
+            "city": city,
+            "weather": weather_summary,
+            "occasion": occasion,
+            "instruction": (
+                f"Suggest a complete outfit for someone in {city} today. "
+                f"Current weather: {weather_summary}. Occasion: {occasion}.{style_note} "
+                "Include: top, bottom (or dress), shoes, outerwear if needed, accessories. "
+                "Be specific and practical. Give 2 outfit options."
+            ),
+        }
+
+    # ── Recipe from Ingredients ───────────────────────────────────────────────
+    @register(
+        name="recipe_from_ingredients",
+        description=(
+            "Suggest recipes based on ingredients the user has. "
+            "Use for: 'what can I cook with...', 'recipe with eggs and pasta', 'ne yemek yapayım', 'malzemelere göre yemek'."
+        ),
+        params={
+            "ingredients": {"type": "string",  "description": "Comma-separated list of available ingredients", "required": True},
+            "meal_type":   {"type": "string",  "description": "breakfast | lunch | dinner | snack | dessert (optional)"},
+            "servings":    {"type": "integer", "description": "Number of servings (default 2)"},
+            "dietary":     {"type": "string",  "description": "Dietary restrictions: vegetarian | vegan | gluten-free | etc."},
+        },
+        package="you",
+    )
+    async def _recipe_from_ingredients(ingredients: str, meal_type: str = "",
+                                       servings: int = 2, dietary: str = ""):
+        parts = [f"Ingredients available: {ingredients}"]
+        if meal_type:
+            parts.append(f"Meal type: {meal_type}")
+        if dietary:
+            parts.append(f"Dietary restrictions: {dietary}")
+        parts.append(f"Servings: {servings}")
+        return {
+            "ingredients": ingredients,
+            "meal_type":   meal_type or "any",
+            "servings":    servings,
+            "instruction": (
+                f"Suggest 2-3 recipes using mainly these ingredients: {ingredients}. "
+                + (f"Meal type: {meal_type}. " if meal_type else "")
+                + (f"Dietary: {dietary}. " if dietary else "")
+                + f"For {servings} servings. "
+                "For each recipe include: name, ingredients with quantities, step-by-step instructions, and cooking time. "
+                "Prioritize recipes where the user has most of the required ingredients."
+            ),
+        }
+
+    # ── Activity Suggestions ──────────────────────────────────────────────────
+    @register(
+        name="activity_suggestions",
+        description=(
+            "Suggest activities or hobbies for free time. "
+            "Use for: 'I'm bored', 'what should I do today', 'boşum ne yapayım', 'activity ideas', 'hobby suggestions'."
+        ),
+        params={
+            "mood":        {"type": "string",  "description": "Current mood: energetic | relaxed | social | creative | adventurous"},
+            "duration":    {"type": "string",  "description": "Available time: 30min | 1hr | 2hr | half-day | full-day"},
+            "location":    {"type": "string",  "description": "Location context: home | outdoor | city | nature"},
+            "interests":   {"type": "string",  "description": "User interests or hobbies (optional)"},
+            "weather":     {"type": "string",  "description": "Current weather (optional, e.g. rainy, sunny)"},
+        },
+        package="you",
+    )
+    async def _activity_suggestions(mood: str = "relaxed", duration: str = "1hr",
+                                    location: str = "home", interests: str = "",
+                                    weather: str = ""):
+        return {
+            "mood": mood,
+            "duration": duration,
+            "location": location,
+            "instruction": (
+                f"Suggest 5 activities for someone who is {mood}, has {duration} available, "
+                f"and is {'at home' if location == 'home' else 'in/near ' + location}. "
+                + (f"Their interests: {interests}. " if interests else "")
+                + (f"Current weather: {weather}. " if weather else "")
+                + "For each activity: name, why it's good for this mood, what's needed, and how to get started right now. "
+                "Mix familiar and new ideas. Make them feel genuinely excited to try."
+            ),
+        }
+
+    # ── Personal Profile / FAQ ────────────────────────────────────────────────
+    @register(
+        name="get_my_profile",
+        description=(
+            "Return a summary of everything OZY2 knows about the user from memory. "
+            "Use for: 'who am I', 'what do you know about me', 'my profile', 'SSS', 'tell me about myself'."
+        ),
+        params={
+            "category": {"type": "string", "description": "Filter by: all | personal | preferences | goals | health | work (default: all)"},
+        },
+        package="you",
+    )
+    async def _get_my_profile(category: str = "all"):
+        from pathlib import Path
+        import json
+        memory_file = Path.home() / ".ozy2" / "memory.json"
+        if not memory_file.exists():
+            return {
+                "ok": False,
+                "message": "No profile data yet. Tell OZY2 things about yourself and they'll be remembered!",
+                "tip": "Try: 'Remember that I prefer dark mode', 'I work as a designer', 'My goal is to read 12 books this year'"
+            }
+        try:
+            memories = json.loads(memory_file.read_text())
+            if isinstance(memories, list):
+                items = memories
+            elif isinstance(memories, dict):
+                items = list(memories.values()) if memories else []
+            else:
+                items = []
+
+            if category != "all" and items:
+                # Filter by category keyword
+                items = [m for m in items if category.lower() in str(m).lower()]
+
+            return {
+                "ok": True,
+                "category": category,
+                "memory_count": len(items),
+                "memories": items,
+                "instruction": (
+                    f"Based on these {len(items)} things OZY2 knows about the user, "
+                    "create a personal profile/FAQ summary. "
+                    "Organize by: Personal info, Preferences & tastes, Work & goals, Habits & routines. "
+                    "Be warm and personal, as if introducing someone you know well. "
+                    f"Data: {json.dumps(items, ensure_ascii=False)}"
+                ),
+            }
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    # ── Book Tracker ──────────────────────────────────────────────────────────
+    @register(
+        name="add_book",
+        description=(
+            "Add a book to the reading tracker. "
+            "Use for: 'I started reading', 'add book', 'track this book', 'kitap ekle'."
+        ),
+        params={
+            "title":    {"type": "string", "description": "Book title", "required": True},
+            "author":   {"type": "string", "description": "Author name"},
+            "status":   {"type": "string", "description": "reading | want_to_read | completed (default: reading)"},
+            "total_pages": {"type": "integer", "description": "Total pages in the book"},
+        },
+        package="you",
+    )
+    async def _add_book(title: str, author: str = "", status: str = "reading",
+                        total_pages: int = 0):
+        from pathlib import Path
+        from datetime import datetime
+        import json
+        db_file = Path.home() / ".ozy2" / "books.json"
+        books = json.loads(db_file.read_text()) if db_file.exists() else []
+        # Check duplicate
+        existing = next((b for b in books if b["title"].lower() == title.lower()), None)
+        if existing:
+            return {"ok": False, "error": f"'{title}' is already in your library", "book": existing}
+        book = {
+            "id":           len(books) + 1,
+            "title":        title,
+            "author":       author,
+            "status":       status,
+            "total_pages":  total_pages,
+            "current_page": 0,
+            "added":        datetime.now().strftime("%Y-%m-%d"),
+            "finished":     "",
+            "rating":       0,
+            "notes":        [],
+        }
+        books.append(book)
+        db_file.parent.mkdir(parents=True, exist_ok=True)
+        db_file.write_text(json.dumps(books, indent=2, ensure_ascii=False))
+        return {"ok": True, "book": book, "total_books": len(books)}
+
+    @register(
+        name="update_reading_progress",
+        description=(
+            "Update reading progress for a book. "
+            "Use for: 'I read 50 pages', 'I finished the book', 'I'm on page 200'."
+        ),
+        params={
+            "title":        {"type": "string",  "description": "Book title (partial match ok)", "required": True},
+            "current_page": {"type": "integer", "description": "Current page number"},
+            "status":       {"type": "string",  "description": "reading | completed | paused"},
+            "rating":       {"type": "integer", "description": "Rating 1-5 (set when completed)"},
+        },
+        package="you",
+    )
+    async def _update_reading_progress(title: str, current_page: int = 0,
+                                       status: str = "", rating: int = 0):
+        from pathlib import Path
+        from datetime import datetime
+        import json
+        db_file = Path.home() / ".ozy2" / "books.json"
+        if not db_file.exists():
+            return {"ok": False, "error": "No books found. Add a book first."}
+        books = json.loads(db_file.read_text())
+        book = next((b for b in books if title.lower() in b["title"].lower()), None)
+        if not book:
+            return {"ok": False, "error": f"Book '{title}' not found"}
+        if current_page:
+            book["current_page"] = current_page
+        if status:
+            book["status"] = status
+            if status == "completed" and not book["finished"]:
+                book["finished"] = datetime.now().strftime("%Y-%m-%d")
+        if rating:
+            book["rating"] = max(1, min(5, rating))
+        db_file.write_text(json.dumps(books, indent=2, ensure_ascii=False))
+        progress = ""
+        if book["total_pages"] and book["current_page"]:
+            pct = int(book["current_page"] / book["total_pages"] * 100)
+            progress = f"{pct}%"
+        return {"ok": True, "book": book, "progress": progress}
+
+    @register(
+        name="add_book_note",
+        description=(
+            "Add a note or highlight to a book. "
+            "Use for: 'note from this book', 'save this quote', 'kitaptan not al'."
+        ),
+        params={
+            "title":   {"type": "string", "description": "Book title (partial match ok)", "required": True},
+            "note":    {"type": "string", "description": "Note or quote to save", "required": True},
+            "page":    {"type": "integer","description": "Page number (optional)"},
+            "type":    {"type": "string", "description": "note | quote | highlight (default: note)"},
+        },
+        package="you",
+    )
+    async def _add_book_note(title: str, note: str, page: int = 0, type: str = "note"):
+        from pathlib import Path
+        from datetime import datetime
+        import json
+        db_file = Path.home() / ".ozy2" / "books.json"
+        if not db_file.exists():
+            return {"ok": False, "error": "No books found."}
+        books = json.loads(db_file.read_text())
+        book = next((b for b in books if title.lower() in b["title"].lower()), None)
+        if not book:
+            return {"ok": False, "error": f"Book '{title}' not found"}
+        entry = {
+            "type": type,
+            "text": note,
+            "page": page,
+            "date": datetime.now().strftime("%Y-%m-%d"),
+        }
+        book.setdefault("notes", []).append(entry)
+        db_file.write_text(json.dumps(books, indent=2, ensure_ascii=False))
+        # Also save to memory for cross-context recall
+        return {"ok": True, "book": book["title"], "note_saved": entry}
+
+    @register(
+        name="get_current_reading",
+        description=(
+            "Show books currently being read and reading stats. "
+            "Use for: 'what am I reading', 'my books', 'reading progress', 'kitaplarım'."
+        ),
+        params={
+            "status": {"type": "string", "description": "Filter: reading | completed | want_to_read | all (default: reading)"},
+        },
+        package="you",
+    )
+    async def _get_current_reading(status: str = "reading"):
+        from pathlib import Path
+        import json
+        db_file = Path.home() / ".ozy2" / "books.json"
+        if not db_file.exists():
+            return {"ok": True, "books": [], "message": "No books tracked yet. Start by adding a book!"}
+        books = json.loads(db_file.read_text())
+        filtered = books if status == "all" else [b for b in books if b.get("status") == status]
+        # Add progress percentage
+        for b in filtered:
+            if b.get("total_pages") and b.get("current_page"):
+                b["progress_pct"] = int(b["current_page"] / b["total_pages"] * 100)
+            else:
+                b["progress_pct"] = 0
+        stats = {
+            "total": len(books),
+            "reading": sum(1 for b in books if b.get("status") == "reading"),
+            "completed": sum(1 for b in books if b.get("status") == "completed"),
+            "want_to_read": sum(1 for b in books if b.get("status") == "want_to_read"),
+        }
+        return {"ok": True, "books": filtered, "stats": stats}
+
+    # ── Smart Home (Home Assistant) ───────────────────────────────────────────
+    @register(
+        name="smarthome_status",
+        description=(
+            "Get the status of smart home devices via Home Assistant. "
+            "Use for: 'home status', 'what lights are on', 'temperature at home', 'akıllı ev durumu'."
+        ),
+        params={
+            "domain": {"type": "string", "description": "Filter by domain: light | switch | climate | sensor | all (default: all)"},
+            "area":   {"type": "string", "description": "Filter by area/room name (optional)"},
+        },
+        package="you",
+    )
+    async def _smarthome_status(domain: str = "all", area: str = ""):
+        from pathlib import Path
+        import json, urllib.request
+        cfg_file = Path.home() / ".ozy2" / "smarthome.json"
+        if not cfg_file.exists():
+            return {
+                "ok": False,
+                "setup_required": True,
+                "message": "Smart home not configured. Go to Settings → Smart Home to connect Home Assistant.",
+            }
+        cfg = json.loads(cfg_file.read_text())
+        ha_url   = cfg.get("url", "").rstrip("/")
+        ha_token = cfg.get("token", "")
+        if not ha_url or not ha_token:
+            return {"ok": False, "setup_required": True, "message": "Home Assistant URL or token missing."}
+        try:
+            req = urllib.request.Request(
+                f"{ha_url}/api/states",
+                headers={"Authorization": f"Bearer {ha_token}", "Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=10) as r:
+                states = json.loads(r.read())
+            # Filter
+            if domain != "all":
+                states = [s for s in states if s["entity_id"].startswith(f"{domain}.")]
+            if area:
+                states = [s for s in states if area.lower() in s.get("attributes", {}).get("friendly_name", "").lower()]
+            # Summarize
+            summary = []
+            for s in states[:50]:
+                summary.append({
+                    "entity":  s["entity_id"],
+                    "name":    s.get("attributes", {}).get("friendly_name", s["entity_id"]),
+                    "state":   s["state"],
+                    "unit":    s.get("attributes", {}).get("unit_of_measurement", ""),
+                })
+            return {"ok": True, "devices": summary, "count": len(summary)}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @register(
+        name="smarthome_control",
+        description=(
+            "Control a smart home device via Home Assistant. "
+            "Use for: 'turn on the lights', 'set thermostat to 22', 'lambayı aç', 'close the blinds'."
+        ),
+        params={
+            "entity_id": {"type": "string", "description": "Entity ID (e.g. light.living_room) or friendly name", "required": True},
+            "action":    {"type": "string", "description": "turn_on | turn_off | toggle | set_temperature | set_brightness", "required": True},
+            "value":     {"type": "string", "description": "Value for set actions (e.g. temperature number or brightness 0-255)"},
+        },
+        package="you",
+    )
+    async def _smarthome_control(entity_id: str, action: str, value: str = ""):
+        from pathlib import Path
+        import json, urllib.request
+        cfg_file = Path.home() / ".ozy2" / "smarthome.json"
+        if not cfg_file.exists():
+            return {"ok": False, "setup_required": True, "message": "Smart home not configured."}
+        cfg = json.loads(cfg_file.read_text())
+        ha_url   = cfg.get("url", "").rstrip("/")
+        ha_token = cfg.get("token", "")
+        if not ha_url or not ha_token:
+            return {"ok": False, "error": "Home Assistant not configured."}
+
+        domain = entity_id.split(".")[0] if "." in entity_id else "homeassistant"
+        service_map = {
+            "turn_on":  (domain, "turn_on"),
+            "turn_off": (domain, "turn_off"),
+            "toggle":   (domain, "toggle"),
+            "set_temperature": ("climate", "set_temperature"),
+            "set_brightness":  ("light", "turn_on"),
+        }
+        svc_domain, service = service_map.get(action, (domain, action))
+        payload = {"entity_id": entity_id}
+        if action == "set_temperature" and value:
+            payload["temperature"] = float(value)
+        elif action == "set_brightness" and value:
+            payload["brightness"] = int(value)
+
+        try:
+            data = json.dumps(payload).encode()
+            req = urllib.request.Request(
+                f"{ha_url}/api/services/{svc_domain}/{service}",
+                data=data,
+                headers={
+                    "Authorization": f"Bearer {ha_token}",
+                    "Content-Type": "application/json",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10) as r:
+                result = json.loads(r.read()) if r.read() else []
+            return {"ok": True, "entity": entity_id, "action": action, "value": value}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}

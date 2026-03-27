@@ -7,18 +7,24 @@
     "icon":        "🧑",
     "price":       "Free",
     "skills": [
-      { "id": "get_weather",         "label": "Weather",           "icon": "🌤️",  "desc": "Real-time weather & forecasts for any city" },
-      { "id": "web_search",          "label": "Web Search",        "icon": "🔍",  "desc": "Search the web with DuckDuckGo, no API key needed" },
-      { "id": "get_news",            "label": "News",              "icon": "📰",  "desc": "Top headlines by topic or keyword" },
-      { "id": "convert_currency",    "label": "Currency",          "icon": "💱",  "desc": "Live exchange rates and currency conversion" },
-      { "id": "summarize_text",      "label": "Summarizer",        "icon": "📝",  "desc": "Summarize any text, URL or document" },
-      { "id": "create_document",     "label": "Word / DOCX",       "icon": "📄",  "desc": "Create and edit Word documents" },
-      { "id": "create_spreadsheet",  "label": "Excel / XLSX",      "icon": "📊",  "desc": "Generate spreadsheets with formulas" },
-      { "id": "add_note",            "label": "Notes",             "icon": "🗒️",  "desc": "Add and list notes (Apple Notes / local)" },
-      { "id": "add_reminder",        "label": "Reminders",         "icon": "⏰",  "desc": "Set and manage reminders" },
-      { "id": "list_tasks",          "label": "Tasks",             "icon": "✅",  "desc": "Manage your to-do list" },
-      { "id": "remember",            "label": "Memory",            "icon": "🧠",  "desc": "Remember and recall facts about you" },
-      { "id": "get_today_events",    "label": "Calendar",          "icon": "📅",  "desc": "View and create calendar events" }
+      { "id": "get_weather",              "label": "Weather",             "icon": "🌤️",  "desc": "Real-time weather & forecasts for any city" },
+      { "id": "web_search",              "label": "Web Search",          "icon": "🔍",  "desc": "Search the web with DuckDuckGo, no API key needed" },
+      { "id": "get_news",                "label": "News",                "icon": "📰",  "desc": "Top headlines by topic or keyword" },
+      { "id": "convert_currency",        "label": "Currency",            "icon": "💱",  "desc": "Live exchange rates and currency conversion" },
+      { "id": "summarize_text",          "label": "Summarizer",          "icon": "📝",  "desc": "Summarize any text, URL or document" },
+      { "id": "create_document",         "label": "Word / DOCX",         "icon": "📄",  "desc": "Create and edit Word documents" },
+      { "id": "create_spreadsheet",      "label": "Excel / XLSX",        "icon": "📊",  "desc": "Generate spreadsheets with formulas" },
+      { "id": "add_note",                "label": "Notes",               "icon": "🗒️",  "desc": "Add and list notes (Apple Notes / local)" },
+      { "id": "add_reminder",            "label": "Reminders",           "icon": "⏰",  "desc": "Set and manage reminders" },
+      { "id": "list_tasks",              "label": "Tasks",               "icon": "✅",  "desc": "Manage your to-do list" },
+      { "id": "remember",                "label": "Memory",              "icon": "🧠",  "desc": "Remember and recall facts about you" },
+      { "id": "get_today_events",        "label": "Calendar",            "icon": "📅",  "desc": "View and create calendar events" },
+      { "id": "outfit_of_day",           "label": "Outfit Suggestion",   "icon": "👗",  "desc": "AI outfit recommendation based on weather & occasion" },
+      { "id": "recipe_from_ingredients", "label": "Recipe Finder",       "icon": "🍳",  "desc": "Get recipes based on ingredients you have" },
+      { "id": "activity_suggestions",    "label": "Activity Ideas",      "icon": "🎯",  "desc": "Get hobby & activity ideas for your free time" },
+      { "id": "get_my_profile",          "label": "Personal Profile",    "icon": "🪪",  "desc": "Your personal FAQ — OZY2 knows you" },
+      { "id": "add_book",                "label": "Book Tracker",        "icon": "📖",  "desc": "Track books you're reading, add notes & highlights" },
+      { "id": "smarthome_status",        "label": "Smart Home",          "icon": "🏠",  "desc": "Control lights, temperature & smart home devices" }
     ]
   },
 
@@ -65,6 +71,31 @@
       { "id": "start_debate",        "label": "Debate Mode",       "icon": "⚔️",  "desc": "Multi-AI structured debate on any topic" },
       { "id": "monitor_emails",      "label": "Email Monitor",     "icon": "🔔",  "desc": "Watch inbox for keywords and get instant alerts" },
       { "id": "send_telegram",       "label": "Telegram",          "icon": "✈️",  "desc": "Send and receive Telegram messages" }
+    ]
+  },
+
+  "business": {
+    "id":          "business",
+    "label":       "OZY2 Business",
+    "tagline":     "Your complete workplace AI",
+    "color":       "#f59e0b",
+    "icon":        "🏢",
+    "price":       "$12.99/mo",
+    "coming_soon": true,
+    "includes":    "social",
+    "skills": [
+      { "id": "slack_message",        "label": "Slack",             "icon": "💬",  "desc": "Send and read Slack messages across channels" },
+      { "id": "teams_message",        "label": "Microsoft Teams",   "icon": "🟦",  "desc": "Teams messages, meetings & file sharing" },
+      { "id": "jira_issues",          "label": "Jira",              "icon": "🔵",  "desc": "Create, update and track Jira issues" },
+      { "id": "linear_issues",        "label": "Linear",            "icon": "🔷",  "desc": "Manage Linear issues and project cycles" },
+      { "id": "asana_tasks",          "label": "Asana",             "icon": "🔴",  "desc": "Assign and update Asana tasks & projects" },
+      { "id": "hubspot_crm",          "label": "HubSpot",           "icon": "🟠",  "desc": "Manage CRM contacts, deals and pipelines" },
+      { "id": "salesforce_crm",       "label": "Salesforce",        "icon": "☁️",  "desc": "Query and update Salesforce records" },
+      { "id": "google_workspace",     "label": "Google Workspace",  "icon": "🅖",  "desc": "Admin across Gmail, Docs, Sheets, Meet for your team" },
+      { "id": "confluence_pages",     "label": "Confluence",        "icon": "📘",  "desc": "Create and search Confluence wiki pages" },
+      { "id": "analytics_report",     "label": "Analytics",         "icon": "📊",  "desc": "Pull data from GA4, Mixpanel or Amplitude" },
+      { "id": "meeting_summarizer",   "label": "Meeting Summary",   "icon": "🎙️",  "desc": "Transcribe and summarize meetings automatically" },
+      { "id": "invoice_generator",    "label": "Invoice Creator",   "icon": "🧾",  "desc": "Generate professional invoices as PDF or DOCX" }
     ]
   }
 }

@@ -157,6 +157,8 @@ from api.routers.memory_router    import router as memory_router
 from api.routers.telegram_router  import router as telegram_router
 from api.routers.briefing_router  import router as briefing_router
 from api.routers.youtube_router   import router as youtube_router
+from api.routers.books_router     import router as books_router
+from api.routers.smarthome_router import router as smarthome_router
 
 app.include_router(auth_router)
 app.include_router(setup_router)
@@ -171,6 +173,8 @@ app.include_router(memory_router)
 app.include_router(telegram_router)
 app.include_router(briefing_router)
 app.include_router(youtube_router)
+app.include_router(books_router)
+app.include_router(smarthome_router)
 
 
 @app.get("/login", response_class=HTMLResponse)

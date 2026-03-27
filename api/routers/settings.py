@@ -136,7 +136,7 @@ async def get_active_package():
         return {"package": active_id, "skills": []}
     packages = json.loads(PACKAGES_FILE.read_text())
 
-    TIER_ORDER  = ["you", "pro", "social"]
+    TIER_ORDER  = ["you", "pro", "social", "business"]
     all_skills  = []
     for tier_id in TIER_ORDER:
         tier = packages.get(tier_id, {})
