@@ -160,19 +160,14 @@ defaults write com.apple.dock persistent-apps -array-add \
 
 echo ""
 echo "  ╔═══════════════════════════════════════╗"
-echo "  ║   ✅ OZY2 kurulumu tamamlandı!        ║"
+echo "  ║   OZY2 kurulumu tamamlandi!           ║"
 echo "  ║                                       ║"
-echo "  ║   Launchpad → OZY2                    ║"
-echo "  ║   veya: open /Applications/OZY2.app   ║"
+echo "  ║   Launchpad veya Dock uzerinden ac.   ║"
 echo "  ╚═══════════════════════════════════════╝"
 echo ""
-echo "  → İlk açılışta API key girmeni isteyecek."
-echo "  → Gemini ücretsiz: https://aistudio.google.com"
+echo "  -> Ilk acilista API key girmeni isteyecek."
+echo "  -> Gemini ucretsiz: https://aistudio.google.com"
 echo ""
-
-# Launch immediately
-read -p "  Şimdi başlatayım mı? (y/n): " -n 1 -r < /dev/tty
-echo ""
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-  open "$APP"
-fi
+echo "  -> OZY2 baslatiliyor..."
+sleep 1
+open "$APP"
