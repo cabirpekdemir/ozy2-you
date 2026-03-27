@@ -58,7 +58,7 @@ function init_settings(el) {
             — <a href="https://t.me/userinfobot" target="_blank" style="color:var(--accent)">@userinfobot</a>'a yaz, ID'ni yolla
           </span>
         </label>
-        <input id="s-telegram-users" class="input" placeholder="5580852182"
+        <input id="s-telegram-users" class="input" placeholder="123456789"
           style="width:100%;margin-bottom:12px">
 
         <label style="font-size:13px;color:var(--text-3);display:block;margin-bottom:6px">GitHub Token</label>
