@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from api.state import get_agent
@@ -41,12 +41,14 @@ async def lifespan(app: FastAPI):
     logger.info("[OZY2] Shut down.")
 
 
-# ── Security Middleware: Localhost-only request guard ─────────────────────────
+# ── Security Middleware: Localhost-only (disabled when remote_access=true) ────
 class LocalhostOnlyMiddleware(BaseHTTPMiddleware):
-    """Reject any request whose Host header is not localhost / 127.0.0.1."""
     _ALLOWED = {"localhost", "127.0.0.1"}
 
     async def dispatch(self, request: FastAPIRequest, call_next):
+        from api.routers.auth_router import remote_access_enabled
+        if remote_access_enabled():
+            return await call_next(request)
         host = request.headers.get("host", "").split(":")[0]
         if host not in self._ALLOWED:
             return JSONResponse(
@@ -54,6 +56,33 @@ class LocalhostOnlyMiddleware(BaseHTTPMiddleware):
                 status_code=403,
             )
         return await call_next(request)
+
+
+# ── Auth Middleware: Redirect to /login if PIN is set and no valid session ────
+_PUBLIC = {"/login", "/api/auth/login", "/api/auth/status", "/static", "/favicon"}
+
+class AuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: FastAPIRequest, call_next):
+        from api.routers.auth_router import pin_required, is_valid_session, COOKIE
+        path = request.url.path
+
+        # Always allow public paths
+        if any(path.startswith(p) for p in _PUBLIC):
+            return await call_next(request)
+
+        # If no PIN set — allow everything
+        if not pin_required():
+            return await call_next(request)
+
+        # Check session cookie
+        token = request.cookies.get(COOKIE)
+        if is_valid_session(token):
+            return await call_next(request)
+
+        # API calls get 401, pages get redirect
+        if path.startswith("/api/"):
+            return JSONResponse({"ok": False, "error": "Not authenticated"}, status_code=401)
+        return RedirectResponse("/login")
 
 
 app = FastAPI(
@@ -92,6 +121,8 @@ app.add_middleware(
     allow_headers=["Content-Type"],
 )
 
+# ── Auth guard ────────────────────────────────────────────────────────────────
+app.add_middleware(AuthMiddleware)
 # ── Localhost-only guard ───────────────────────────────────────────────────────
 app.add_middleware(LocalhostOnlyMiddleware)
 
@@ -102,6 +133,7 @@ app.mount("/static", StaticFiles(directory=str(STATIC)), name="static")
 templates = Jinja2Templates(directory=str(TEMPLATES))
 
 # ── Routers ──────────────────────────────────────────────
+from api.routers.auth_router  import router as auth_router
 from api.routers.chat         import router as chat_router
 from api.routers.i18n         import router as i18n_router
 from api.routers.settings     import router as settings_router
@@ -114,6 +146,7 @@ from api.routers.memory_router    import router as memory_router
 from api.routers.telegram_router  import router as telegram_router
 from api.routers.briefing_router  import router as briefing_router
 
+app.include_router(auth_router)
 app.include_router(setup_router)
 app.include_router(chat_router)
 app.include_router(i18n_router)
@@ -125,6 +158,11 @@ app.include_router(tasks_router)
 app.include_router(memory_router)
 app.include_router(telegram_router)
 app.include_router(briefing_router)
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse(request, "login.html")
 
 
 @app.get("/", response_class=HTMLResponse)

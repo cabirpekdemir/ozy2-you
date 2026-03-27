@@ -32,15 +32,34 @@ if [ -n "$EXISTING" ]; then
   sleep 1
 fi
 
-echo "  → Starting at http://127.0.0.1:8081"
+# Detect remote_access from settings
+REMOTE=$("$PYTHON" -c "
+import json, pathlib
+cfg = pathlib.Path('$DIR/config/settings.json')
+if cfg.exists():
+    d = json.loads(cfg.read_text())
+    print('true' if d.get('remote_access') else 'false')
+else:
+    print('false')
+" 2>/dev/null)
+
+if [ "$REMOTE" = "true" ]; then
+  HOST="0.0.0.0"
+  LAN_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "0.0.0.0")
+  echo "  → Remote access ON  — http://$LAN_IP:8081"
+else
+  HOST="127.0.0.1"
+  LAN_IP="127.0.0.1"
+  echo "  → Local only        — http://127.0.0.1:8081"
+fi
 echo "  → Press Ctrl+C to stop"
 echo ""
 
 # Open browser after 2 seconds
-(sleep 2 && open "http://127.0.0.1:8081") &
+(sleep 2 && open "http://$LAN_IP:8081") &
 
 exec "$PYTHON" -m uvicorn api.app:app \
-  --host 127.0.0.1 \
+  --host "$HOST" \
   --port 8081 \
   --reload \
   --reload-dir api \

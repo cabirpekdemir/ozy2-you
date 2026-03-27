@@ -113,6 +113,54 @@ function init_settings(el) {
 
       </div>
 
+      <!-- Security -->
+      <div class="card" style="padding:20px;margin-bottom:16px">
+        <div class="card-header" style="margin-bottom:4px;font-size:15px;font-weight:600">🔐 Security & Access</div>
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:16px">
+          Set a PIN to protect OZY2. Required when remote access is enabled.
+        </div>
+
+        <!-- Remote access toggle -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding:12px 14px;background:var(--bg-2,#111);border-radius:10px">
+          <div>
+            <div style="font-size:13px;font-weight:600">Remote Access</div>
+            <div style="font-size:11px;color:var(--text-3);margin-top:2px">
+              Allow access from other devices on your network
+            </div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="s-remote-access" onchange="toggleRemoteAccess(this)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div id="remote-ip-info" style="display:none;font-size:12px;color:var(--text-3);margin-bottom:16px;padding:10px 14px;background:#4f8ef711;border:1px solid #4f8ef733;border-radius:8px">
+          📡 Open <strong id="remote-url">http://&lt;your-ip&gt;:8081</strong> on other devices.<br>
+          <span style="color:#f59e0b">⚠ Restart OZY2 for this to take effect.</span>
+        </div>
+
+        <!-- PIN setup -->
+        <div id="pin-status-line" style="font-size:13px;color:var(--text-3);margin-bottom:12px"></div>
+
+        <div style="display:grid;gap:10px">
+          <div>
+            <label style="font-size:13px;color:var(--text-3);display:block;margin-bottom:6px" id="pin-current-label">Current PIN</label>
+            <input id="s-pin-current" type="password" inputmode="numeric" maxlength="6"
+              class="input" placeholder="Leave empty if no PIN set" style="width:100%">
+          </div>
+          <div>
+            <label style="font-size:13px;color:var(--text-3);display:block;margin-bottom:6px">New PIN (4–6 digits)</label>
+            <input id="s-pin-new" type="password" inputmode="numeric" maxlength="6"
+              class="input" placeholder="e.g. 1234" style="width:100%">
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" style="flex:1" onclick="savePin()">Set PIN</button>
+            <button class="btn btn-ghost" style="color:#ef4444" onclick="removePin()" id="btn-remove-pin">Remove PIN</button>
+          </div>
+          <div id="pin-msg" style="font-size:12px;min-height:16px"></div>
+        </div>
+      </div>
+
       <!-- Save -->
       <button class="btn btn-primary" style="width:100%;padding:13px"
         onclick="saveSettings()">Save Settings</button>
@@ -122,6 +170,7 @@ function init_settings(el) {
 
   loadCurrentSettings();
   checkGoogleStatus();
+  loadSecurityStatus();
 }
 
 const MODELS = {
@@ -279,6 +328,122 @@ async function connectGoogle() {
 }
 
 async function disconnectGoogle() {
-  await fetch('/api/google/status');   // just re-check
+  await fetch('/api/google/status');
   toast('To disconnect, delete ~/Ozy2/config/google_token.json', 'info');
 }
+
+// ── Security / PIN ────────────────────────────────────────────────────────────
+
+async function loadSecurityStatus() {
+  try {
+    const r = await fetch('/api/auth/status');
+    const d = await r.json();
+
+    // PIN status
+    const line = document.getElementById('pin-status-line');
+    if (line) {
+      line.innerHTML = d.pin_set
+        ? `🔒 <strong>PIN is active</strong> — enter current PIN to change it.`
+        : `🔓 <strong>No PIN set</strong> — OZY2 opens without authentication.`;
+    }
+    const removeBtn = document.getElementById('btn-remove-pin');
+    if (removeBtn) removeBtn.style.display = d.pin_set ? 'block' : 'none';
+
+    // Remote access
+    const toggle = document.getElementById('s-remote-access');
+    if (toggle) toggle.checked = d.remote_access;
+    updateRemoteInfo(d.remote_access);
+  } catch {}
+}
+
+async function savePin() {
+  const current = document.getElementById('s-pin-current')?.value || '';
+  const newPin  = document.getElementById('s-pin-new')?.value || '';
+  const msg     = document.getElementById('pin-msg');
+  if (!newPin) { if (msg) msg.innerHTML = `<span style="color:#f59e0b">Enter a new PIN.</span>`; return; }
+  try {
+    const r = await fetch('/api/auth/pin', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({current_pin: current, new_pin: newPin}),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      if (msg) msg.innerHTML = `<span style="color:#10b981">✓ PIN updated!</span>`;
+      document.getElementById('s-pin-current').value = '';
+      document.getElementById('s-pin-new').value = '';
+      loadSecurityStatus();
+    } else {
+      if (msg) msg.innerHTML = `<span style="color:#f43f5e">${d.error}</span>`;
+    }
+  } catch (e) { if (msg) msg.innerHTML = `<span style="color:#f43f5e">Error: ${e.message}</span>`; }
+}
+
+async function removePin() {
+  const current = document.getElementById('s-pin-current')?.value || '';
+  const msg = document.getElementById('pin-msg');
+  try {
+    const r = await fetch('/api/auth/pin', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({current_pin: current, new_pin: ''}),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      if (msg) msg.innerHTML = `<span style="color:#10b981">✓ PIN removed.</span>`;
+      loadSecurityStatus();
+    } else {
+      if (msg) msg.innerHTML = `<span style="color:#f43f5e">${d.error}</span>`;
+    }
+  } catch (e) { if (msg) msg.innerHTML = `<span style="color:#f43f5e">Error: ${e.message}</span>`; }
+}
+
+async function toggleRemoteAccess(checkbox) {
+  const enabled = checkbox.checked;
+  updateRemoteInfo(enabled);
+  try {
+    await fetch('/api/settings', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({remote_access: enabled}),
+    });
+    toast(enabled ? '📡 Remote access enabled — restart OZY2' : '🔒 Remote access disabled — restart OZY2', 'success');
+  } catch {}
+}
+
+async function updateRemoteInfo(enabled) {
+  const info = document.getElementById('remote-ip-info');
+  if (!info) return;
+  info.style.display = enabled ? 'block' : 'none';
+  if (enabled) {
+    try {
+      const r = await fetch('/api/settings');
+      const d = await r.json();
+    } catch {}
+    document.getElementById('remote-url').textContent = `http://<your-mac-ip>:8081`;
+  }
+}
+
+// Toggle switch CSS (injected once)
+(function injectToggleCSS() {
+  if (document.getElementById('toggle-switch-css')) return;
+  const s = document.createElement('style');
+  s.id = 'toggle-switch-css';
+  s.textContent = `
+    .toggle-switch { position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0; }
+    .toggle-switch input { opacity:0; width:0; height:0; }
+    .toggle-slider {
+      position:absolute; cursor:pointer; inset:0;
+      background:#2a2f45; border-radius:24px;
+      transition:background .2s;
+    }
+    .toggle-slider::before {
+      content:''; position:absolute;
+      width:18px; height:18px; border-radius:50%;
+      background:#fff; left:3px; bottom:3px;
+      transition:transform .2s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background:#4f8ef7; }
+    .toggle-switch input:checked + .toggle-slider::before { transform:translateX(20px); }
+  `;
+  document.head.appendChild(s);
+})();
