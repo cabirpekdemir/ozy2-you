@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await I18N.load(lang);
 
   // Show initial panel
-  showPanel('chat');
+  showPanel('home');
 
   // Mobile: show sidebar toggle
   if (window.innerWidth <= 768) {
