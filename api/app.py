@@ -36,6 +36,12 @@ async def lifespan(app: FastAPI):
     register_all()   # register all skill tools
     get_agent()
     scheduler.start()
+
+    # ── Günde 2 kez otomatik sağlık kontrolü (09:00 ve 21:00) ────────────────
+    from core.health_check import health_check_and_notify
+    scheduler.add_daily("health_check_morning", health_check_and_notify, hour=9,  minute=0)
+    scheduler.add_daily("health_check_evening", health_check_and_notify, hour=21, minute=0)
+
     yield
     scheduler.stop()
     logger.info("[OZY2] Shut down.")
@@ -159,6 +165,7 @@ from api.routers.briefing_router  import router as briefing_router
 from api.routers.youtube_router   import router as youtube_router
 from api.routers.books_router     import router as books_router
 from api.routers.smarthome_router import router as smarthome_router
+from api.routers.health_router    import router as health_router
 
 app.include_router(auth_router)
 app.include_router(setup_router)
@@ -175,6 +182,7 @@ app.include_router(briefing_router)
 app.include_router(youtube_router)
 app.include_router(books_router)
 app.include_router(smarthome_router)
+app.include_router(health_router)
 
 
 @app.get("/login", response_class=HTMLResponse)

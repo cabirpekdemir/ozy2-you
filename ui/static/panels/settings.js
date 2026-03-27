@@ -171,6 +171,19 @@ function init_settings(el) {
         </div>
       </div>
 
+      <!-- Health Check -->
+      <div class="card" style="padding:20px;margin-bottom:16px">
+        <div class="card-header" style="margin-bottom:4px;font-size:15px;font-weight:600">🏥 Sistem Sağlığı</div>
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:14px">
+          Tüm servisleri test eder. Rapor otomatik olarak 09:00 ve 21:00'da Telegram'a gönderilir.
+        </div>
+        <div id="health-result" style="margin-bottom:12px"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" style="flex:1" onclick="healthRun()">🔍 Şimdi Test Et</button>
+          <button class="btn btn-ghost" style="flex:1" onclick="healthSend()">📩 Telegram'a Gönder</button>
+        </div>
+      </div>
+
       <!-- Save -->
       <button class="btn btn-primary" style="width:100%;padding:13px"
         onclick="saveSettings()">Save Settings</button>
@@ -460,3 +473,64 @@ async function updateRemoteInfo(enabled) {
   `;
   document.head.appendChild(s);
 })();
+
+// ── Health Check ──────────────────────────────────────────────────────────────
+
+async function healthRun() {
+  const el = document.getElementById('health-result');
+  if (!el) return;
+  el.innerHTML = '<span style="color:var(--text-3);font-size:13px">⏳ Test ediliyor...</span>';
+  try {
+    const r = await fetch('/api/health');
+    const d = await r.json();
+    if (!d.ok) { el.innerHTML = `<span style="color:var(--red);font-size:13px">❌ ${d.error}</span>`; return; }
+
+    const pct   = d.score_pct;
+    const color = pct === 100 ? 'var(--green)' : pct >= 70 ? '#f59e0b' : 'var(--red)';
+    const icon  = pct === 100 ? '✅' : pct >= 70 ? '🟡' : '🔴';
+
+    // Kategorilere göre grupla
+    const cats = {};
+    (d.results || []).forEach(r => {
+      cats[r.category] = cats[r.category] || [];
+      cats[r.category].push(r);
+    });
+
+    let rows = '';
+    for (const [cat, items] of Object.entries(cats)) {
+      const catPass = items.filter(i => i.passed).length;
+      const catIcon = catPass === items.length ? '🟢' : catPass > 0 ? '🟡' : '🔴';
+      rows += `<div style="font-weight:600;font-size:12px;margin:8px 0 4px">${catIcon} ${cat}</div>`;
+      items.forEach(i => {
+        const mark   = i.passed ? '✅' : '❌';
+        const ms     = i.passed ? `<span style="color:var(--text-3);font-size:11px"> ${i.ms}ms</span>` : '';
+        const detail = !i.passed && i.detail ? `<span style="color:var(--red);font-size:11px"> — ${i.detail.substring(0,50)}</span>` : '';
+        rows += `<div style="padding:2px 0 2px 12px;font-size:12px">${mark} ${i.emoji} ${i.name}${ms}${detail}</div>`;
+      });
+    }
+
+    el.innerHTML = `
+      <div style="background:var(--bg3);border-radius:10px;padding:12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:20px">${icon}</span>
+          <div>
+            <div style="font-weight:700;font-size:14px;color:${color}">${pct}% Sağlıklı</div>
+            <div style="font-size:11px;color:var(--text-3)">${d.passed}/${d.total} test geçti · ${d.duration_ms}ms</div>
+          </div>
+        </div>
+        ${rows}
+      </div>`;
+  } catch(e) {
+    el.innerHTML = `<span style="color:var(--red);font-size:13px">❌ Bağlantı hatası: ${e.message}</span>`;
+  }
+}
+
+async function healthSend() {
+  const r = await fetch('/api/health/send', { method: 'POST' });
+  const d = await r.json();
+  if (d.ok) {
+    toast('Rapor Telegram\'a gönderildi ✅', 'success');
+  } else {
+    toast(d.error || 'Gönderilemedi', 'error');
+  }
+}
