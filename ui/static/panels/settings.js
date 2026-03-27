@@ -699,7 +699,17 @@ async function ttsSaveEnabled(enabled) {
 
 async function ttsTest() {
   const voice  = document.getElementById('tts-voice')?.value;
-  const sample = 'Merhaba! Ben OZY2. Sesimi beğendiniz mi?';
+  const lang   = voice ? voice.split('-')[0] : 'tr';
+  const samples = {
+    tr: 'Merhaba! Ben OZY2. Sesimi beğendiniz mi?',
+    en: 'Hello! I am OZY2, your personal AI assistant. How does my voice sound?',
+    de: 'Hallo! Ich bin OZY2, dein persönlicher KI-Assistent.',
+    fr: 'Bonjour! Je suis OZY2, votre assistant IA personnel.',
+    es: '¡Hola! Soy OZY2, tu asistente de inteligencia artificial.',
+    ar: 'مرحباً! أنا OZY2، مساعدك الذكي الشخصي.',
+    ja: 'こんにちは！私はOZY2、あなたのパーソナルAIアシスタントです。',
+  };
+  const sample = samples[lang] || samples['en'];
   try {
     const r = await fetch('/api/tts/test', {
       method: 'POST',
