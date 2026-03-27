@@ -4,6 +4,8 @@ from pathlib import Path
 from fastapi import APIRouter, Request
 from api.state import reset_agent
 
+TOKEN_FILE = Path(__file__).parent.parent.parent / "config" / "google_token.json"
+
 PACKAGES_FILE = Path(__file__).parent.parent.parent / "config" / "packages.json"
 
 router     = APIRouter(tags=["Settings"])
@@ -41,6 +43,21 @@ async def save_settings(request: Request):
     write_cfg(cfg)
     reset_agent()   # re-init agent with new config
     return {"ok": True}
+
+
+@router.get("/api/google/status")
+async def google_status():
+    """Check whether a valid Google OAuth token exists on this machine."""
+    if not TOKEN_FILE.exists():
+        return {"ok": False, "connected": False, "reason": "No token file — run reauth_google.py"}
+    try:
+        token_data = json.loads(TOKEN_FILE.read_text())
+        has_token  = bool(token_data.get("token") or token_data.get("access_token"))
+        if not has_token:
+            return {"ok": False, "connected": False, "reason": "Token file is empty or invalid"}
+        return {"ok": True, "connected": True}
+    except Exception as e:
+        return {"ok": False, "connected": False, "reason": str(e)}
 
 
 @router.get("/api/packages")
