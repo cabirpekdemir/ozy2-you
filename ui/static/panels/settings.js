@@ -65,24 +65,43 @@ function init_settings(el) {
           style="width:100%;margin-bottom:12px">
       </div>
 
-      <!-- Gmail / Email -->
+      <!-- Gmail / Google OAuth -->
       <div class="card" style="padding:20px;margin-bottom:16px">
-        <div class="card-header" style="margin-bottom:16px;font-size:15px;font-weight:600">📧 Gmail & Google</div>
+        <div class="card-header" style="margin-bottom:16px;font-size:15px;font-weight:600">📧 Gmail, Calendar & Drive</div>
 
-        <div id="google-status" style="font-size:13px;margin-bottom:14px;padding:10px 14px;border-radius:10px;background:var(--bg-2,#111)">
+        <div id="google-status" style="font-size:13px;margin-bottom:16px;padding:12px 14px;border-radius:10px;background:var(--bg-2,#111);border-left:3px solid #333">
           Checking...
         </div>
 
-        <label style="font-size:13px;color:var(--text-3);display:block;margin-bottom:6px">Gmail Address</label>
-        <input id="s-gmail" class="input" placeholder="you@gmail.com"
-          style="width:100%;margin-bottom:12px">
-
-        <div style="font-size:12px;color:var(--text-3);margin-bottom:10px;line-height:1.5">
-          To connect Gmail, Calendar and Drive — run this once in Terminal:<br>
-          <code style="background:var(--bg-2,#111);padding:4px 8px;border-radius:6px;font-size:11px;display:inline-block;margin-top:4px">
-            cd ~/Ozy2 && venv/bin/python3 reauth_google.py
-          </code>
+        <!-- Connected state: just show gmail input -->
+        <div id="google-connected-section" style="display:none">
+          <label style="font-size:13px;color:var(--text-3);display:block;margin-bottom:6px">Gmail Address</label>
+          <input id="s-gmail" class="input" placeholder="you@gmail.com" style="width:100%;margin-bottom:12px">
+          <button class="btn btn-ghost" style="font-size:12px;color:#ef4444" onclick="disconnectGoogle()">
+            Disconnect Google
+          </button>
         </div>
+
+        <!-- Not connected state: credentials + connect button -->
+        <div id="google-setup-section" style="display:none">
+          <div style="font-size:13px;color:var(--text-3);margin-bottom:12px;line-height:1.6">
+            Paste your <strong>google_credentials.json</strong> content below, then click Connect.<br>
+            <a href="https://console.cloud.google.com/apis/credentials" target="_blank"
+               style="color:var(--accent,#4f8ef7);font-size:12px">
+              Get credentials from Google Cloud Console →
+            </a>
+          </div>
+          <textarea id="s-google-creds" class="input"
+            placeholder='{"installed": {"client_id": "...", "client_secret": "..."}}'
+            style="width:100%;height:90px;font-size:11px;font-family:monospace;margin-bottom:12px;resize:vertical"></textarea>
+          <button class="btn btn-primary" style="width:100%" onclick="connectGoogle()">
+            🔗 Connect Google Account
+          </button>
+          <div id="google-auth-progress" style="display:none;margin-top:10px;font-size:13px;color:var(--text-3);text-align:center">
+            ⏳ Browser opened — complete sign-in there…
+          </div>
+        </div>
+
       </div>
 
       <!-- Save -->
@@ -186,20 +205,68 @@ function setTheme(theme) {
 }
 
 async function checkGoogleStatus() {
-  const el = document.getElementById('google-status');
+  const el        = document.getElementById('google-status');
+  const connected = document.getElementById('google-connected-section');
+  const setup     = document.getElementById('google-setup-section');
   if (!el) return;
   try {
     const r = await fetch('/api/google/status');
     const d = await r.json();
     if (d.connected) {
-      el.innerHTML = `<span style="color:#10b981;font-weight:600">✓ Connected</span> — Gmail, Calendar and Drive are active on this machine.`;
+      el.innerHTML = `<span style="color:#10b981;font-weight:600">✓ Connected</span> — Gmail, Calendar and Drive active.`;
       el.style.borderLeft = '3px solid #10b981';
+      if (connected) connected.style.display = 'block';
+      if (setup)     setup.style.display     = 'none';
     } else {
-      el.innerHTML = `<span style="color:#f59e0b;font-weight:600">⚠ Not connected on this device</span><br>
-        <span style="color:var(--text-3);font-size:12px">${d.reason || 'Run reauth_google.py in Terminal to connect.'}</span>`;
+      el.innerHTML = `<span style="color:#f59e0b;font-weight:600">⚠ Not connected on this device</span>`;
       el.style.borderLeft = '3px solid #f59e0b';
+      if (connected) connected.style.display = 'none';
+      if (setup)     setup.style.display     = 'block';
     }
   } catch {
-    el.innerHTML = `<span style="color:#ef4444;font-weight:600">✗ Error</span> — Could not check Google status.`;
+    el.innerHTML = `<span style="color:#ef4444;font-weight:600">✗ Error checking status</span>`;
   }
+}
+
+async function connectGoogle() {
+  const credsEl = document.getElementById('s-google-creds');
+  const progress = document.getElementById('google-auth-progress');
+  const content = credsEl?.value?.trim();
+
+  if (content) {
+    const r = await fetch('/api/google/credentials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content })
+    });
+    const d = await r.json();
+    if (!d.ok) { toast('Credentials error: ' + d.error, 'error'); return; }
+  }
+
+  const r2 = await fetch('/api/google/auth/start', { method: 'POST' });
+  const d2 = await r2.json();
+  if (!d2.ok) { toast(d2.error || 'Could not start auth', 'error'); return; }
+
+  if (progress) progress.style.display = 'block';
+  toast('Browser opened — sign in with Google', 'success');
+
+  // Poll until done
+  const poll = setInterval(async () => {
+    const s = await fetch('/api/google/auth/status').then(r => r.json());
+    if (s.state === 'done') {
+      clearInterval(poll);
+      if (progress) progress.style.display = 'none';
+      toast('✓ Google connected!', 'success');
+      checkGoogleStatus();
+    } else if (s.state === 'error') {
+      clearInterval(poll);
+      if (progress) progress.style.display = 'none';
+      toast('Auth error: ' + s.error, 'error');
+    }
+  }, 2000);
+}
+
+async function disconnectGoogle() {
+  await fetch('/api/google/status');   // just re-check
+  toast('To disconnect, delete ~/Ozy2/config/google_token.json', 'info');
 }

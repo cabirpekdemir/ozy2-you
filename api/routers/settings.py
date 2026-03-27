@@ -4,7 +4,12 @@ from pathlib import Path
 from fastapi import APIRouter, Request
 from api.state import reset_agent
 
+import threading
+
 TOKEN_FILE = Path(__file__).parent.parent.parent / "config" / "google_token.json"
+CREDS_FILE = Path(__file__).parent.parent.parent / "config" / "google_credentials.json"
+
+_auth_status = {"state": "idle", "error": ""}   # shared state for OAuth flow
 
 PACKAGES_FILE = Path(__file__).parent.parent.parent / "config" / "packages.json"
 
@@ -43,6 +48,60 @@ async def save_settings(request: Request):
     write_cfg(cfg)
     reset_agent()   # re-init agent with new config
     return {"ok": True}
+
+
+@router.post("/api/google/credentials")
+async def save_credentials(request: Request):
+    """Save google_credentials.json content sent from the UI."""
+    try:
+        data = await request.json()
+        content = data.get("content", "")
+        parsed = json.loads(content)          # validate it's real JSON
+        if "installed" not in parsed and "web" not in parsed:
+            return {"ok": False, "error": "Not a valid Google credentials file"}
+        CREDS_FILE.parent.mkdir(exist_ok=True)
+        CREDS_FILE.write_text(json.dumps(parsed, indent=2))
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+@router.post("/api/google/auth/start")
+async def start_google_auth():
+    """Start OAuth flow in background — opens browser automatically."""
+    global _auth_status
+    if not CREDS_FILE.exists():
+        return {"ok": False, "error": "credentials_missing"}
+    if _auth_status["state"] == "running":
+        return {"ok": True, "state": "running"}
+
+    def _run_flow():
+        global _auth_status
+        _auth_status = {"state": "running", "error": ""}
+        try:
+            from google_auth_oauthlib.flow import InstalledAppFlow
+            SCOPES = [
+                "https://www.googleapis.com/auth/gmail.readonly",
+                "https://www.googleapis.com/auth/gmail.send",
+                "https://www.googleapis.com/auth/gmail.modify",
+                "https://www.googleapis.com/auth/calendar",
+                "https://www.googleapis.com/auth/drive.readonly",
+                "https://www.googleapis.com/auth/drive.file",
+            ]
+            flow = InstalledAppFlow.from_client_secrets_file(str(CREDS_FILE), SCOPES)
+            creds = flow.run_local_server(port=0, open_browser=True)
+            TOKEN_FILE.write_text(creds.to_json())
+            _auth_status = {"state": "done", "error": ""}
+        except Exception as e:
+            _auth_status = {"state": "error", "error": str(e)}
+
+    threading.Thread(target=_run_flow, daemon=True).start()
+    return {"ok": True, "state": "running"}
+
+
+@router.get("/api/google/auth/status")
+async def google_auth_status():
+    return {"ok": True, **_auth_status}
 
 
 @router.get("/api/google/status")
