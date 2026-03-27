@@ -32,7 +32,7 @@ async def wizard(request: Request):
     # Already set up → redirect to home
     if cfg.get("api_key") and not cfg.get("_first_run", True):
         return RedirectResponse("/")
-    return TEMPLATES.TemplateResponse("setup.html", {"request": request})
+    return TEMPLATES.TemplateResponse(request, "setup.html")
 
 
 @router.post("/api/setup/complete")
