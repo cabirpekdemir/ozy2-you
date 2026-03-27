@@ -32,5 +32,8 @@ google-auth-oauthlib>=1.0
 google-auth-httplib2>=0.2
 google-api-python-client>=2.0
 
+# ── Telegram ─────────────────────────────────────────────────────────────────
+python-telegram-bot>=20.0      # Telegram bot integration
+
 # ── Packaging (only needed at build time, not runtime) ────────────────────────
 # pyinstaller>=6.0             # uncomment to build locally
