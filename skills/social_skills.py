@@ -447,6 +447,44 @@ end tell
             "note": "Email watch saved. The scheduler will check Gmail periodically."
         }
 
+    # ── Telegram ──────────────────────────────────────────────────────────────
+    @register(
+        name="send_telegram",
+        description=(
+            "Send a Telegram message to the configured chat. "
+            "Use for: 'telegram at gönder', 'send telegram message', "
+            "'telegram ile bildir', 'notify me on telegram'."
+        ),
+        params={
+            "message": {"type": "string", "description": "Message to send", "required": True},
+        },
+        package="social",
+    )
+    async def _send_telegram(message: str):
+        from integrations.telegram import send_message
+        ok = await send_message(message)
+        if ok:
+            return {"ok": True, "sent": message}
+        return {"ok": False, "error": "Message not delivered — check Telegram token and chat ID in Settings"}
+
+    @register(
+        name="get_telegram_messages",
+        description=(
+            "Read recent messages received on the Telegram bot. "
+            "Use for: 'telegram mesajlarım', 'show telegram messages', 'check telegram'."
+        ),
+        params={
+            "limit": {"type": "integer", "description": "Number of messages to fetch (default 10)"},
+        },
+        package="social",
+    )
+    async def _get_telegram_messages(limit: int = 10):
+        from integrations.telegram import get_updates
+        messages = await get_updates(limit=limit)
+        if not messages:
+            return {"ok": True, "messages": [], "note": "No new messages from Telegram bot"}
+        return {"ok": True, "count": len(messages), "messages": messages}
+
     @register(
         name="list_email_watches",
         description="List active email monitors.",

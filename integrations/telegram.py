@@ -6,7 +6,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-_BASE = "https://api.telegram.org/bot{token}/{method}"
+_last_update_id: int = 0  # offset tracker — avoids 409 conflict between instances
 
 
 def _get_token() -> str:
@@ -59,21 +59,38 @@ async def send_message(text: str, chat_id: Optional[int] = None,
 
 
 async def get_updates(limit: int = 20, offset: int = 0) -> list:
-    """Fetch recent updates from the bot."""
+    """Fetch recent updates from the bot with offset tracking to avoid 409 conflicts."""
+    global _last_update_id
+    from datetime import datetime, timezone
+
     try:
         allowed = _get_allowed_users()
+        # Use the tracked offset so multiple instances don't fight
+        effective_offset = max(offset, _last_update_id)
+
         async with httpx.AsyncClient(timeout=10) as client:
             r = await client.get(_url("getUpdates"), params={
                 "limit":   limit,
-                "offset":  offset,
+                "offset":  effective_offset,
                 "timeout": 0,
             })
         data = r.json()
+
+        # 409 = another instance is polling — return empty gracefully
         if not data.get("ok"):
+            err_code = data.get("error_code", 0)
+            if err_code == 409:
+                logger.warning("Telegram 409: another instance is polling — backing off")
+            else:
+                logger.error(f"Telegram getUpdates error: {data.get('description')}")
             return []
 
         result = []
         for u in data.get("result", []):
+            uid_val = u.get("update_id", 0)
+            if uid_val >= _last_update_id:
+                _last_update_id = uid_val + 1  # advance offset
+
             msg = u.get("message") or u.get("edited_message")
             if not msg:
                 continue
@@ -82,10 +99,9 @@ async def get_updates(limit: int = 20, offset: int = 0) -> list:
             if allowed and uid not in allowed:
                 continue
             ts = msg.get("date", 0)
-            from datetime import datetime, timezone
             date_str = datetime.fromtimestamp(ts, tz=timezone.utc).isoformat() if ts else ""
             result.append({
-                "update_id": u.get("update_id"),
+                "update_id": uid_val,
                 "from":      from_user.get("first_name", "Unknown"),
                 "text":      msg.get("text", ""),
                 "date":      date_str,
