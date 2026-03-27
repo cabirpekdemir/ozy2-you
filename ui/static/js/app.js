@@ -75,6 +75,42 @@ function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('hidden');
 }
 
+// ── Inactivity auto-logout (remote access only) ───────────────
+const IDLE_MS = 5 * 60 * 1000; // 5 dakika
+let _idleTimer = null;
+
+async function _checkRemoteAndStartIdle() {
+  try {
+    const r = await fetch('/api/auth/status');
+    const d = await r.json();
+    if (!d.remote_access || !d.pin_set) return; // yerel mod → timeout yok
+    _resetIdleTimer();
+    ['mousemove', 'keydown', 'touchstart', 'click', 'scroll'].forEach(ev =>
+      document.addEventListener(ev, _resetIdleTimer, { passive: true })
+    );
+  } catch {}
+}
+
+function _resetIdleTimer() {
+  clearTimeout(_idleTimer);
+  _idleTimer = setTimeout(_idleLogout, IDLE_MS);
+}
+
+async function _idleLogout() {
+  try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {}
+  const ov = document.createElement('div');
+  ov.style.cssText = `position:fixed;inset:0;background:#080a10;z-index:9999;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-family:-apple-system,sans-serif;color:#e8eaf2;gap:12px;`;
+  ov.innerHTML = `
+    <div style="font-size:44px">🔒</div>
+    <div style="font-size:18px;font-weight:600">Oturum süresi doldu</div>
+    <div style="font-size:13px;color:#5a6380">5 dakika hareketsizlik nedeniyle kilitlendi</div>
+  `;
+  document.body.appendChild(ov);
+  setTimeout(() => window.location.replace('/login'), 1500);
+}
+
 // ── Init ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   // Apply saved theme
@@ -92,4 +128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (window.innerWidth <= 768) {
     document.getElementById('sidebar-toggle').style.display = 'flex';
   }
+
+  // Hareketsizlik timer'ını başlat (remote access aktifse)
+  _checkRemoteAndStartIdle();
 });
