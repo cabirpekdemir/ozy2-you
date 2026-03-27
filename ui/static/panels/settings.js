@@ -171,6 +171,39 @@ function init_settings(el) {
         </div>
       </div>
 
+      <!-- TTS -->
+      <div class="card" style="padding:20px;margin-bottom:16px">
+        <div class="card-header" style="margin-bottom:4px;font-size:15px;font-weight:600">🔊 Sesli Yanıt (TTS)</div>
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:14px">
+          Microsoft Edge Neural TTS — ücretsiz, API anahtarı gerektirmez. Telegram'dan gelen mesajlara sesli yanıt verir.
+        </div>
+
+        <!-- Enable toggle -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <span style="font-size:13px">Sesli yanıtı etkinleştir</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="tts-enabled" onchange="ttsSaveEnabled(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <!-- Voice selector -->
+        <div style="margin-bottom:12px">
+          <label style="font-size:12px;color:var(--text-3);display:block;margin-bottom:6px">Ses Seçimi</label>
+          <div style="display:flex;gap:8px">
+            <select id="tts-voice" class="input" style="flex:1" onchange="ttsSaveVoice(this.value)">
+              <option value="">Yükleniyor...</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="ttsTest()" title="Test et">▶️</button>
+          </div>
+        </div>
+
+        <!-- Lang filter -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="tts-lang-filter"></div>
+
+        <audio id="tts-preview" style="display:none"></audio>
+      </div>
+
       <!-- Health Check -->
       <div class="card" style="padding:20px;margin-bottom:16px">
         <div class="card-header" style="margin-bottom:4px;font-size:15px;font-weight:600">🏥 Sistem Sağlığı</div>
@@ -194,6 +227,7 @@ function init_settings(el) {
   loadCurrentSettings();
   checkGoogleStatus();
   loadSecurityStatus();
+  ttsLoad();
 }
 
 const MODELS = {
@@ -568,5 +602,121 @@ async function healthSend() {
     toast('Rapor Telegram\'a gönderildi ✅', 'success');
   } else {
     toast(d.error || 'Gönderilemedi', 'error');
+  }
+}
+
+// ── TTS ───────────────────────────────────────────────────────────────────────
+
+let _ttsAllVoices = [];
+let _ttsLang      = 'all';
+
+async function ttsLoad() {
+  // Config yükle
+  try {
+    const cfg = await fetch('/api/tts/config').then(r => r.json());
+    const chk = document.getElementById('tts-enabled');
+    if (chk) chk.checked = cfg.enabled;
+    _ttsCurrentVoice = cfg.voice;
+  } catch {}
+
+  // Sesleri yükle
+  try {
+    const r  = await fetch('/api/tts/voices?featured_only=false');
+    const d  = await r.json();
+    _ttsAllVoices = d.voices || [];
+    ttsRenderLangFilter();
+    ttsRenderVoices();
+  } catch (e) {
+    const sel = document.getElementById('tts-voice');
+    if (sel) sel.innerHTML = '<option value="">Yüklenemedi</option>';
+  }
+}
+
+function ttsRenderLangFilter() {
+  const el = document.getElementById('tts-lang-filter');
+  if (!el) return;
+  const langs = ['all', ...new Set(_ttsAllVoices.map(v => v.lang || v.locale?.split('-')[0]))].slice(0, 12);
+  const labels = { all:'Tümü', tr:'🇹🇷 TR', en:'🇬🇧 EN', de:'🇩🇪 DE', fr:'🇫🇷 FR',
+                   es:'🇪🇸 ES', ar:'🇸🇦 AR', ja:'🇯🇵 JA', zh:'🇨🇳 ZH', ko:'🇰🇷 KO',
+                   it:'🇮🇹 IT', pt:'🇧🇷 PT', ru:'🇷🇺 RU' };
+  el.innerHTML = langs.map(l => `
+    <button class="btn btn-ghost btn-sm ${l===_ttsLang?'active':''}" style="font-size:11px;padding:3px 8px"
+            onclick="ttsSetLang('${l}',this)">${labels[l]||l.toUpperCase()}</button>
+  `).join('');
+}
+
+function ttsSetLang(lang, btn) {
+  _ttsLang = lang;
+  document.querySelectorAll('#tts-lang-filter .btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ttsRenderVoices();
+}
+
+function ttsRenderVoices() {
+  const sel = document.getElementById('tts-voice');
+  if (!sel) return;
+  const filtered = _ttsLang === 'all'
+    ? _ttsAllVoices
+    : _ttsAllVoices.filter(v => (v.lang || v.locale?.split('-')[0]) === _ttsLang);
+
+  sel.innerHTML = filtered.map(v => {
+    const name      = v.short_name || v.name;
+    const gender    = v.gender === 'Female' ? '👩' : '👨';
+    const locale    = v.locale || '';
+    const display   = name.replace('Neural', '').replace(locale + '-', '').replace(locale + '.', '');
+    return `<option value="${name}" ${name === _ttsCurrentVoice ? 'selected' : ''}>
+      ${gender} ${display} — ${locale}
+    </option>`;
+  }).join('');
+}
+
+let _ttsCurrentVoice = '';
+
+async function ttsSaveVoice(voice) {
+  _ttsCurrentVoice = voice;
+  try {
+    const cfg = await fetch('/api/settings').then(r => r.json());
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...cfg.settings, tts_voice: voice }),
+    });
+    toast('Ses kaydedildi', 'success');
+  } catch {}
+}
+
+async function ttsSaveEnabled(enabled) {
+  try {
+    const cfg = await fetch('/api/settings').then(r => r.json());
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...cfg.settings, tts_enabled: enabled }),
+    });
+    toast(enabled ? 'TTS açıldı 🔊' : 'TTS kapatıldı', 'info');
+  } catch {}
+}
+
+async function ttsTest() {
+  const voice  = document.getElementById('tts-voice')?.value;
+  const sample = 'Merhaba! Ben OZY2. Sesimi beğendiniz mi?';
+  try {
+    const r = await fetch('/api/tts/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: sample, voice }),
+    });
+    if (!r.ok) { toast('Ses üretilemedi', 'error'); return; }
+    const blob = await r.blob();
+    const url  = URL.createObjectURL(blob);
+    const audio = document.getElementById('tts-preview');
+    if (audio) {
+      audio.src = url;
+      audio.style.display = 'block';
+      audio.play();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    }
+  } catch (e) {
+    toast('TTS hatası: ' + e.message, 'error');
   }
 }

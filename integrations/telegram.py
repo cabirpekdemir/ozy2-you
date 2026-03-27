@@ -173,6 +173,35 @@ async def _parse_message(msg: dict, update_id: int) -> Optional[dict]:
 
 # ── Otomatik AI cevabı ────────────────────────────────────────────────────────
 
+async def _send_voice_reply(text: str, chat_id: int):
+    """TTS etkinse sesli mesaj gönder, yoksa sadece metin gönder."""
+    try:
+        from integrations.tts import synthesize_to_file, tts_enabled
+        if not tts_enabled():
+            return False
+        tmp_path = await synthesize_to_file(text[:1000])
+        try:
+            users  = _get_allowed_users()
+            target = chat_id or (users[0] if users else None)
+            if not target:
+                return False
+            with open(tmp_path, "rb") as f:
+                async with httpx.AsyncClient(timeout=30) as client:
+                    r = await client.post(_url("sendVoice"), data={
+                        "chat_id": target,
+                    }, files={"voice": ("reply.mp3", f, "audio/mpeg")})
+            return r.json().get("ok", False)
+        finally:
+            import os
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+    except Exception as e:
+        logger.warning(f"[Telegram] Voice reply failed: {e}")
+        return False
+
+
 async def _auto_reply(msg: dict):
     """Gelen mesajı AI agent'a ilet, cevabı Telegram'a gönder."""
     text     = msg["text"]
@@ -197,8 +226,13 @@ async def _auto_reply(msg: dict):
         response = await agent.think(text)
         if len(response) > 4000:
             response = response[:3997] + "..."
-        await send_message(response, chat_id=chat_id)
-        logger.info(f"[Telegram] Auto-reply sent ({msg_type}) to {chat_id}")
+
+        # Önce sesli mesaj dene (TTS açıksa), sonra metin gönder
+        voice_sent = await _send_voice_reply(response, chat_id)
+        if not voice_sent:
+            await send_message(response, chat_id=chat_id)
+
+        logger.info(f"[Telegram] Auto-reply sent ({msg_type}, voice={voice_sent}) to {chat_id}")
     except Exception as e:
         logger.error(f"[Telegram] Auto-reply error: {e}")
         await send_message(f"❌ <i>Hata: {str(e)[:100]}</i>", chat_id=chat_id)

@@ -35,5 +35,8 @@ google-api-python-client>=2.0
 # ── Telegram ─────────────────────────────────────────────────────────────────
 python-telegram-bot>=20.0      # Telegram bot integration
 
+# ── Text-to-Speech ────────────────────────────────────────────────────────────
+edge-tts>=6.1                  # Microsoft Edge neural TTS (ücretsiz, kaliteli)
+
 # ── Packaging (only needed at build time, not runtime) ────────────────────────
 # pyinstaller>=6.0             # uncomment to build locally
