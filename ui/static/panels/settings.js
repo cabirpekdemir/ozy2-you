@@ -120,6 +120,16 @@ function init_settings(el) {
           Set a PIN to protect OZY2. Required when remote access is enabled.
         </div>
 
+        <!-- Port setting -->
+        <div style="margin-bottom:16px">
+          <label style="font-size:13px;color:var(--text-3);display:block;margin-bottom:6px">
+            Port
+            <span style="font-size:11px;color:var(--text-3);font-weight:400"> — default 8081. Change if another app uses the same port (e.g. 8082). Restart required.</span>
+          </label>
+          <input id="s-port" type="number" class="input" placeholder="8081" min="1024" max="65535"
+            style="width:140px">
+        </div>
+
         <!-- Remote access toggle -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding:12px 14px;background:var(--bg-2,#111);border-radius:10px">
           <div>
@@ -211,6 +221,8 @@ async function loadCurrentSettings() {
       if (githubUser) githubUser.value = s.github_username || '';
       const name = document.getElementById('s-name');
       if (name) name.value = s.user_name || '';
+      const port = document.getElementById('s-port');
+      if (port) port.value = s.port || 8081;
       const gmail = document.getElementById('s-gmail');
       const emailAccounts = s.email_accounts || [];
       const gmailAcc = emailAccounts.find(a => a.provider === 'gmail');
@@ -232,6 +244,7 @@ async function saveSettings() {
     github_token:    document.getElementById('s-github')?.value,
     github_username: document.getElementById('s-github-user')?.value,
     user_name:       document.getElementById('s-name')?.value,
+    port:            parseInt(document.getElementById('s-port')?.value) || 8081,
     theme:           document.body.classList.contains('theme-light') ? 'light' : 'dark',
     email_accounts:  (() => {
       const gmail = document.getElementById('s-gmail')?.value?.trim();

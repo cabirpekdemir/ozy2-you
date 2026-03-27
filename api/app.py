@@ -109,12 +109,23 @@ Run `python3 reauth_google.py` once to authorize.
     redoc_url="/redoc",
 )
 
-# ── CORS: only allow requests from localhost origins ──────────────────────────
+# ── CORS: allow localhost on configured port ──────────────────────────────────
+def _get_port() -> int:
+    try:
+        import json
+        cfg = ROOT / "config" / "settings.json"
+        return int(json.loads(cfg.read_text()).get("port", 8081))
+    except Exception:
+        return 8081
+
+_PORT = _get_port()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:8081",
-        "http://127.0.0.1:8081",
+        f"http://localhost:{_PORT}",
+        f"http://127.0.0.1:{_PORT}",
+        "*",  # allow Tailscale / LAN when remote_access is on
     ],
     allow_credentials=False,
     allow_methods=["GET", "POST", "DELETE", "PUT"],
