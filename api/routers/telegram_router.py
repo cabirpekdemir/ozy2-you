@@ -26,7 +26,9 @@ async def send(req: SendRequest):
     try:
         from integrations.telegram import send_message
         ok = await send_message(req.text, chat_id=req.chat_id)
-        return {"ok": ok}
+        if ok:
+            return {"ok": True}
+        return {"ok": False, "error": "Message not delivered — check token and chat ID in Settings"}
     except Exception as e:
         return {"ok": False, "error": str(e)}
 

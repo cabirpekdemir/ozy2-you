@@ -52,6 +52,15 @@ function init_settings(el) {
         <input id="s-telegram" type="password" class="input" placeholder="1234567890:AABBcc..."
           style="width:100%;margin-bottom:12px">
 
+        <label style="font-size:13px;color:var(--text-3);display:block;margin-bottom:6px">
+          Telegram Chat ID
+          <span style="font-size:11px;color:var(--text-3);font-weight:400">
+            — <a href="https://t.me/userinfobot" target="_blank" style="color:var(--accent)">@userinfobot</a>'a yaz, ID'ni yolla
+          </span>
+        </label>
+        <input id="s-telegram-users" class="input" placeholder="5580852182"
+          style="width:100%;margin-bottom:12px">
+
         <label style="font-size:13px;color:var(--text-3);display:block;margin-bottom:6px">GitHub Token</label>
         <input id="s-github" type="password" class="input" placeholder="ghp_..."
           style="width:100%;margin-bottom:12px">
@@ -145,6 +154,8 @@ async function loadCurrentSettings() {
       if (apiKey) apiKey.value = s.api_key || '';
       const telegram = document.getElementById('s-telegram');
       if (telegram) telegram.value = s.telegram_token || '';
+      const telegramUsers = document.getElementById('s-telegram-users');
+      if (telegramUsers) telegramUsers.value = s.telegram_users || '';
       const github = document.getElementById('s-github');
       if (github) github.value = s.github_token || '';
       const githubUser = document.getElementById('s-github-user');
@@ -168,6 +179,7 @@ async function saveSettings() {
     model:           document.getElementById('s-model')?.value,
     api_key:         document.getElementById('s-api-key')?.value,
     telegram_token:  document.getElementById('s-telegram')?.value,
+    telegram_users:  document.getElementById('s-telegram-users')?.value,
     github_token:    document.getElementById('s-github')?.value,
     github_username: document.getElementById('s-github-user')?.value,
     user_name:       document.getElementById('s-name')?.value,
