@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>OZY2 — Login</title>
   <link rel="icon" type="image/png" href="/static/icons/favicon.png">
+  <link rel="shortcut icon" type="image/png" href="/static/icons/favicon.png">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -40,14 +41,21 @@
       z-index: 1;
     }
 
-    .logo {
-      font-size: 42px;
-      font-weight: 900;
-      letter-spacing: -1px;
-      margin-bottom: 6px;
+    .logo-wrap {
+      background: #fff;
+      border-radius: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 24px;
+      margin-bottom: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.3);
     }
-    .logo span:first-child { color: #f97316; }
-    .logo span:last-child  { color: #4f8ef7; }
+    .logo-wrap img {
+      height: 52px;
+      width: auto;
+      display: block;
+    }
 
     .subtitle {
       font-size: 13px;
@@ -137,7 +145,9 @@
 <body>
 
 <div class="login-box" id="login-box">
-  <div class="logo"><span>OZY</span><span>2</span></div>
+  <div class="logo-wrap">
+    <img src="/static/icons/logo.png" alt="OZY2">
+  </div>
   <div class="subtitle">Personal AI Assistant</div>
 
   <div class="pin-label">Enter PIN</div>

@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>OZY2 — Setup</title>
+  <link rel="icon" type="image/png" href="/static/icons/favicon.png">
   <style>
     :root {
       --bg:        #0d0f14;
@@ -38,7 +39,16 @@
       text-align: center;
       margin-bottom: 32px;
     }
-    .wizard-logo .star { font-size: 3rem; }
+    .wizard-logo .logo-img-wrap {
+      display: inline-flex;
+      background: #fff;
+      border-radius: 16px;
+      padding: 12px 22px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.3);
+      margin-bottom: 12px;
+    }
+    .wizard-logo .logo-img-wrap img { height: 48px; width: auto; display: block; }
+    .wizard-logo .star { display: none; }
     .wizard-logo h1 { font-size: 1.8rem; font-weight: 700; margin-top: 8px; }
     .wizard-logo p  { color: var(--muted); font-size: 0.95rem; margin-top: 4px; }
 
@@ -221,6 +231,9 @@
 
 <div class="wizard">
   <div class="wizard-logo">
+    <div class="logo-img-wrap">
+      <img src="/static/icons/logo.png" alt="OZY2">
+    </div>
     <div class="star">✦</div>
     <h1>Welcome to OZY2</h1>
     <p>Your personal AI assistant — let's get you set up</p>

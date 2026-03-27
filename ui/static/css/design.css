@@ -111,23 +111,15 @@ html, body {
 }
 
 .ozy-logo {
-  width: 36px; height: 36px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  border-radius: var(--r-md);
+  background: #ffffff;
+  border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
-  box-shadow: 0 0 20px var(--accent-glow);
+  padding: 5px 10px;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
 }
 
-.ozy-name {
-  font-size: 17px;
-  font-weight: 700;
-  background: linear-gradient(135deg, var(--text-1), var(--text-2));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  letter-spacing: -0.3px;
-}
+.ozy-name { display: none; }
 
 .sidebar-nav {
   flex: 1;
