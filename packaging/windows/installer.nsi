@@ -16,15 +16,14 @@ InstallDir "${INSTALL_DIR}"
 RequestExecutionLevel admin
 
 ; ── UI ────────────────────────────────────────────────────────────────────────
+; Note: paths are relative to repo root (makensis runs from there via CI)
 !include "MUI2.nsh"
 !define MUI_ABORTWARNING
-!define MUI_ICON "..\..\..\ui\static\icons\icon.ico"
-!define MUI_UNICON "..\..\..\ui\static\icons\icon.ico"
-!define MUI_HEADERIMAGE
-!define MUI_WELCOMEFINISHPAGE_BITMAP "..\assets\installer_banner.bmp"
+!define MUI_ICON "ui\static\icons\icon.ico"
+!define MUI_UNICON "ui\static\icons\icon.ico"
 
 !insertmacro MUI_PAGE_WELCOME
-!insertmacro MUI_PAGE_LICENSE "..\..\..\PRIVACY.md"
+!insertmacro MUI_PAGE_LICENSE "PRIVACY.md"
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${APP_EXE}"
@@ -41,8 +40,8 @@ Section "OZY2 (required)" SecMain
   SectionIn RO
   SetOutPath "$INSTDIR"
 
-  ; Copy all PyInstaller output files
-  File /r "..\..\dist\OZY2\*.*"
+  ; Copy all PyInstaller output files (path relative to repo root)
+  File /r "dist\OZY2\*.*"
 
   ; Create shortcuts
   CreateDirectory "$SMPROGRAMS\${APP_NAME}"
