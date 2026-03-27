@@ -6,12 +6,12 @@ A technical reference for contributors and developers building on OZY2.
 
 ## Architecture Overview
 
-OZY2 is a local-first desktop application. It runs a **FastAPI server** on `localhost:8081` and serves a web UI in the user's default browser. There is no cloud component — all data stays on the user's machine.
+OZY2 is a local-first desktop application. It runs a **FastAPI server** on `localhost:8082` and serves a web UI in the user's default browser. There is no cloud component — all data stays on the user's machine.
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │                   User's Browser                     │
-│              http://localhost:8081                   │
+│              http://localhost:8082                   │
 └────────────────────┬────────────────────────────────┘
                      │ HTTP / WebSocket
 ┌────────────────────▼────────────────────────────────┐
@@ -238,10 +238,10 @@ pip install -r requirements.txt
 python launcher.py
 ```
 
-The server starts at `http://localhost:8081` with hot-reload disabled by default. For development with auto-reload:
+The server starts at `http://localhost:8082` with hot-reload disabled by default. For development with auto-reload:
 
 ```bash
-uvicorn api.app:app --reload --port 8081
+uvicorn api.app:app --reload --port 8082
 ```
 
 ---

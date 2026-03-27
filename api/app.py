@@ -94,7 +94,7 @@ app = FastAPI(
 Personal AI assistant backend. All endpoints return `{"ok": true, ...}` on success.
 
 ### Authentication
-No auth required — runs locally on `127.0.0.1:8081`.
+No auth required — runs locally on `127.0.0.1:8082`.
 
 ### Streaming Chat
 Use `GET /api/chat/stream?message=...` for SSE streaming.
@@ -114,9 +114,9 @@ def _get_port() -> int:
     try:
         import json
         cfg = ROOT / "config" / "settings.json"
-        return int(json.loads(cfg.read_text()).get("port", 8081))
+        return int(json.loads(cfg.read_text()).get("port", 8082))
     except Exception:
-        return 8081
+        return 8082
 
 _PORT = _get_port()
 

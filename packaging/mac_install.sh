@@ -8,7 +8,7 @@ set -e
 OZY2_DIR="$HOME/Ozy2"
 VENV="$OZY2_DIR/venv"
 APP="/Applications/OZY2.app"
-PORT=8081
+PORT=8082
 
 echo ""
 echo "  ╔═══════════════════════════════════╗"

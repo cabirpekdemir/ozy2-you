@@ -29,10 +29,10 @@ eval $("$PYTHON" -c "
 import json, pathlib
 cfg = pathlib.Path('$DIR/config/settings.json')
 d = json.loads(cfg.read_text()) if cfg.exists() else {}
-print('PORT=' + str(d.get('port', 8081)))
+print('PORT=' + str(d.get('port', 8082)))
 print('REMOTE=' + ('true' if d.get('remote_access') else 'false'))
 " 2>/dev/null)
-PORT=${PORT:-8081}
+PORT=${PORT:-8082}
 REMOTE=${REMOTE:-false}
 
 # Kill any existing OZY2 instance on this port

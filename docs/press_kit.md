@@ -49,7 +49,7 @@ I've been working on OZY2 — a personal AI assistant that runs entirely on your
 
 **How it works:**
 - You paste your own API key (Gemini, OpenAI, Claude, or Ollama for fully offline)
-- OZY2 starts a local FastAPI server on localhost:8081
+- OZY2 starts a local FastAPI server on localhost:8082
 - A browser UI opens with real tool use — not just chat
 
 **38 tools across 3 tiers:**

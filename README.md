@@ -108,7 +108,7 @@ cd ozy2
 pip install -r requirements.txt
 python launcher.py
 ```
-Browser opens at `http://localhost:8081`.
+Browser opens at `http://localhost:8082`.
 
 ---
 

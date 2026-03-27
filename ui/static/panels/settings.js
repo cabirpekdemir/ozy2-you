@@ -124,9 +124,9 @@ function init_settings(el) {
         <div style="margin-bottom:16px">
           <label style="font-size:13px;color:var(--text-3);display:block;margin-bottom:6px">
             Port
-            <span style="font-size:11px;color:var(--text-3);font-weight:400"> — default 8081. Change if another app uses the same port (e.g. 8082). Restart required.</span>
+            <span style="font-size:11px;color:var(--text-3);font-weight:400"> — default 8082. Change if another app uses the same port (e.g. 8082). Restart required.</span>
           </label>
-          <input id="s-port" type="number" class="input" placeholder="8081" min="1024" max="65535"
+          <input id="s-port" type="number" class="input" placeholder="8082" min="1024" max="65535"
             style="width:140px">
         </div>
 
@@ -145,7 +145,7 @@ function init_settings(el) {
         </div>
 
         <div id="remote-ip-info" style="display:none;font-size:12px;color:var(--text-3);margin-bottom:16px;padding:10px 14px;background:#4f8ef711;border:1px solid #4f8ef733;border-radius:8px">
-          📡 Open <strong id="remote-url">http://&lt;your-ip&gt;:8081</strong> on other devices.<br>
+          📡 Open <strong id="remote-url">http://&lt;your-ip&gt;:8082</strong> on other devices.<br>
           <span style="color:#f59e0b">⚠ Restart OZY2 for this to take effect.</span>
         </div>
 
@@ -222,7 +222,7 @@ async function loadCurrentSettings() {
       const name = document.getElementById('s-name');
       if (name) name.value = s.user_name || '';
       const port = document.getElementById('s-port');
-      if (port) port.value = s.port || 8081;
+      if (port) port.value = s.port || 8082;
       const gmail = document.getElementById('s-gmail');
       const emailAccounts = s.email_accounts || [];
       const gmailAcc = emailAccounts.find(a => a.provider === 'gmail');
@@ -244,7 +244,7 @@ async function saveSettings() {
     github_token:    document.getElementById('s-github')?.value,
     github_username: document.getElementById('s-github-user')?.value,
     user_name:       document.getElementById('s-name')?.value,
-    port:            parseInt(document.getElementById('s-port')?.value) || 8081,
+    port:            parseInt(document.getElementById('s-port')?.value) || 8082,
     theme:           document.body.classList.contains('theme-light') ? 'light' : 'dark',
     email_accounts:  (() => {
       const gmail = document.getElementById('s-gmail')?.value?.trim();
@@ -432,7 +432,7 @@ async function updateRemoteInfo(enabled) {
       const r = await fetch('/api/settings');
       const d = await r.json();
     } catch {}
-    document.getElementById('remote-url').textContent = `http://<your-mac-ip>:8081`;
+    document.getElementById('remote-url').textContent = `http://<your-mac-ip>:8082`;
   }
 }
 

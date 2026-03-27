@@ -30,7 +30,7 @@ CONFIG_FILE = CONFIG_DIR / "settings.json"
 DATA_DIR    = USER_DIR / "data"
 LOG_FILE    = USER_DIR / "ozy2.log"
 
-PORT        = 8081
+PORT        = 8082
 HOST        = "127.0.0.1"
 URL         = f"http://{HOST}:{PORT}"
 SETUP_URL   = f"{URL}/setup"

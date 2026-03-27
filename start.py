@@ -24,7 +24,7 @@ def check_config():
         setup()
     cfg = json.loads(CONFIG.read_text())
     if not cfg.get("api_key"):
-        print("  ⚠  API key not set. Visit http://localhost:8081 → Settings")
+        print("  ⚠  API key not set. Visit http://localhost:8082 → Settings")
 
 
 def setup():
@@ -54,7 +54,7 @@ def run():
     check_config()
 
     host = "127.0.0.1"
-    port = 8081
+    port = 8082
 
     print(f"  → Starting at http://{host}:{port}")
     print(f"  → Press Ctrl+C to stop\n")

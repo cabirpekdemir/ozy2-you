@@ -79,7 +79,7 @@ You can change your plan anytime from **Settings → Plans**.
 
 ## 3. The Interface
 
-OZY2 opens in your default browser at `http://localhost:8081`. The interface has:
+OZY2 opens in your default browser at `http://localhost:8082`. The interface has:
 
 ### Sidebar (left)
 Navigation with panels grouped by category:
@@ -233,8 +233,8 @@ All settings can be changed in **Settings panel** or in `~/.ozy2/config/settings
 ## 8. Troubleshooting
 
 ### OZY2 won't open / browser doesn't open
-- Wait 10 seconds and manually go to `http://localhost:8081`
-- Check if something else is using port 8081 and close it
+- Wait 10 seconds and manually go to `http://localhost:8082`
+- Check if something else is using port 8082 and close it
 
 ### "API key invalid" error
 - Double-check your key has no extra spaces
