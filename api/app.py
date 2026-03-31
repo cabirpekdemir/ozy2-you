@@ -196,6 +196,7 @@ from api.routers.business_router    import router as business_router
 from api.routers.github_router      import router as github_router
 from api.routers.marketplace_router import router as marketplace_router
 from api.routers.packages_router    import router as packages_router
+from api.routers.stocks_router      import router as stocks_router
 
 app.include_router(auth_router)
 app.include_router(setup_router)
@@ -222,6 +223,7 @@ app.include_router(business_router)
 app.include_router(github_router)
 app.include_router(marketplace_router)
 app.include_router(packages_router)
+app.include_router(stocks_router)
 
 
 @app.get("/login", response_class=HTMLResponse)
