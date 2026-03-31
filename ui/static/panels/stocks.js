@@ -99,26 +99,22 @@ function stocksRenderQuote(q) {
         </div>
       </div>
 
-      <!-- History table -->
-      ${history.length ? `
-      <div style="border-top:1px solid var(--card-border);padding-top:14px;margin-top:4px">
-        <div style="font-size:12px;font-weight:600;color:var(--text-3);margin-bottom:8px">5-DAY HISTORY</div>
-        <table style="width:100%;font-size:13px;border-collapse:collapse">
-          <thead>
-            <tr>
-              <th style="text-align:left;color:var(--text-3);font-weight:500;padding-bottom:6px">Date</th>
-              <th style="text-align:right;color:var(--text-3);font-weight:500;padding-bottom:6px">Close</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${history.slice(-5).map(h => `
-              <tr style="border-top:1px solid var(--card-border)">
-                <td style="padding:6px 0;color:var(--text-2)">${h.date}</td>
-                <td style="padding:6px 0;text-align:right;font-family:monospace">${h.close}</td>
-              </tr>`).join('')}
-          </tbody>
-        </table>
-      </div>` : ''}
+      <!-- OHLV stats -->
+      <div style="border-top:1px solid var(--card-border);padding-top:14px;margin-top:4px;
+        display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center">
+        ${[
+          ['Open',   q.open],
+          ['High',   q.high],
+          ['Low',    q.low],
+          ['Volume', q.volume ? Number(q.volume).toLocaleString() : '—'],
+        ].map(([label, val]) => `
+          <div>
+            <div style="font-size:11px;color:var(--text-3);margin-bottom:2px">${label}</div>
+            <div style="font-size:13px;font-weight:600;font-family:monospace">${val ?? '—'}</div>
+          </div>`).join('')}
+      </div>
+      ${q.date ? `<div style="margin-top:10px;font-size:11px;color:var(--text-3);text-align:right">
+        ${q.date} ${q.time || ''} · Stooq</div>` : ''}
 
       <!-- Watchlist button -->
       <div style="margin-top:14px">
