@@ -750,12 +750,12 @@ reg_mine()</code></pre>
 }
 
 function mkDoc(id, title, body) {
-  return \`
-    <div id="\${id}" style="margin-bottom:28px">
+  return `
+    <div id="${id}" style="margin-bottom:28px">
       <div style="font-size:16px;font-weight:700;margin-bottom:12px;padding-bottom:8px;
-        border-bottom:1px solid var(--card-border)">\${title}</div>
-      <div>\${body}</div>
-    </div>\`;
+        border-bottom:1px solid var(--card-border)">${title}</div>
+      <div>${body}</div>
+    </div>`;
 }
 
 function mkPre() {
