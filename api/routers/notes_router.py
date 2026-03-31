@@ -3,11 +3,16 @@
 # Licensed under the Elastic License 2.0 — see LICENSE for details.
 
 """OZY2 — Notes API Router"""
+import html
 import sqlite3
 from pathlib import Path
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
+
+
+def _s(v: str | None) -> str | None:
+    return html.escape(v.strip()) if isinstance(v, str) else v
 
 router = APIRouter(prefix="/api/notes", tags=["Notes"])
 
@@ -67,7 +72,7 @@ async def create_note(req: NoteCreate):
     try:
         cur = conn.execute(
             "INSERT INTO notes (title, content) VALUES (?, ?)",
-            (req.title, req.content or "")
+            (_s(req.title), _s(req.content) or "")
         )
         conn.commit()
         return {"ok": True, "id": cur.lastrowid}

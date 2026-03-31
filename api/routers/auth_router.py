@@ -8,11 +8,48 @@ import json
 import secrets
 import sqlite3
 import time
+from collections import defaultdict
 from pathlib import Path
 
 from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel
+
+# ── Rate Limiting ─────────────────────────────────────────────────────────────
+_RATE_LIMIT   = 10          # max failed attempts
+_RATE_WINDOW  = 60 * 15     # 15 minute window
+_LOCKOUT_TIME = 60 * 15     # 15 minute lockout after limit
+
+_failed_attempts: dict[str, list[float]] = defaultdict(list)  # ip → [timestamps]
+_lockouts:        dict[str, float]        = {}                 # ip → lockout_until
+
+
+def _get_ip(request: Request) -> str:
+    return (request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+            or request.client.host)
+
+
+def _is_locked(ip: str) -> bool:
+    until = _lockouts.get(ip)
+    if until and time.time() < until:
+        return True
+    _lockouts.pop(ip, None)
+    return False
+
+
+def _record_failure(ip: str):
+    now = time.time()
+    attempts = [t for t in _failed_attempts[ip] if now - t < _RATE_WINDOW]
+    attempts.append(now)
+    _failed_attempts[ip] = attempts
+    if len(attempts) >= _RATE_LIMIT:
+        _lockouts[ip] = now + _LOCKOUT_TIME
+        _failed_attempts[ip] = []
+
+
+def _clear_failures(ip: str):
+    _failed_attempts.pop(ip, None)
+    _lockouts.pop(ip, None)
 
 CONFIG = Path(__file__).parent.parent.parent / "config" / "settings.json"
 COOKIE = "ozy2_session"
@@ -166,19 +203,30 @@ class ChangePinRequest(BaseModel):
 
 
 @router.post("/login")
-async def login(req: PinRequest, response: Response):
+async def login(req: PinRequest, request: Request, response: Response):
+    ip = _get_ip(request)
+
+    # Rate limit check
+    if _is_locked(ip):
+        return JSONResponse(
+            {"ok": False, "error": "Too many failed attempts. Try again in 15 minutes."},
+            status_code=429,
+        )
+
     cfg = _load()
     stored_admin = cfg.get("pin_hash", "")
     hashed = _hash(req.pin)
 
     # No PIN set → auto admin session
     if not stored_admin:
+        _clear_failures(ip)
         token = _create_session("admin", ["*"])
         response.set_cookie(COOKIE, token, max_age=SESSION_TTL, httponly=True, samesite="lax")
         return {"ok": True, "role": "admin"}
 
     # Check admin PIN
     if hashed == stored_admin:
+        _clear_failures(ip)
         token = _create_session("admin", ["*"])
         response.set_cookie(COOKIE, token, max_age=SESSION_TTL, httponly=True, samesite="lax")
         return {"ok": True, "role": "admin"}
@@ -187,11 +235,17 @@ async def login(req: PinRequest, response: Response):
     for role in _load_roles():
         role_hash = role.get("pin_hash")
         if role_hash and hashed == role_hash:
+            _clear_failures(ip)
             token = _create_session(role["id"], role.get("permissions", []))
             response.set_cookie(COOKIE, token, max_age=SESSION_TTL, httponly=True, samesite="lax")
             return {"ok": True, "role": role["id"]}
 
-    return JSONResponse({"ok": False, "error": "Wrong PIN"}, status_code=401)
+    _record_failure(ip)
+    attempts_left = max(0, _RATE_LIMIT - len(_failed_attempts[ip]))
+    return JSONResponse(
+        {"ok": False, "error": "Wrong PIN", "attempts_left": attempts_left},
+        status_code=401,
+    )
 
 
 @router.post("/logout")

@@ -3,9 +3,15 @@
 # Licensed under the Elastic License 2.0 — see LICENSE for details.
 
 """OZY2 — Tasks API Router"""
+import html
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
+
+
+def _s(v: str | None) -> str | None:
+    """Strip and HTML-escape a string input."""
+    return html.escape(v.strip()) if isinstance(v, str) else v
 
 router = APIRouter(prefix="/api/tasks", tags=["Tasks"])
 
@@ -35,7 +41,7 @@ async def list_tasks(status: Optional[str] = None):
 async def create_task(req: TaskCreate):
     from integrations.tasks_db import add_task
     task_id = add_task(
-        title=req.title, notes=req.notes or "",
+        title=_s(req.title), notes=_s(req.notes) or "",
         priority=req.priority or "normal", due_date=req.due_date
     )
     return {"ok": True, "id": task_id}
@@ -45,7 +51,9 @@ async def create_task(req: TaskCreate):
 async def update_task(task_id: int, req: TaskUpdate):
     from integrations.tasks_db import update_task
     data = req.dict(exclude_none=True)
-    ok   = update_task(task_id, **data)
+    if "title" in data:  data["title"] = _s(data["title"])
+    if "notes" in data:  data["notes"] = _s(data["notes"])
+    ok = update_task(task_id, **data)
     return {"ok": ok}
 
 

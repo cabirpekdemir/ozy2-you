@@ -50,9 +50,30 @@ def write_cfg(data: dict):
     CONFIG.write_text(json.dumps(data, indent=2, ensure_ascii=False))
 
 
+_SENSITIVE_KEYS = {
+    "api_key", "pin_hash", "telegram_token", "github_token",
+    "slack_token", "teams_token", "jira_api_token", "linear_api_key",
+    "asana_token", "hubspot_token", "ga4_api_secret", "openweather_api_key",
+    "exchangerate_api_key",
+}
+
+
+def _mask(cfg: dict) -> dict:
+    """Return a copy of cfg with sensitive values masked for API response."""
+    masked = {}
+    for k, v in cfg.items():
+        if k in _SENSITIVE_KEYS and isinstance(v, str) and len(v) > 8:
+            masked[k] = v[:4] + "****" + v[-2:]
+        elif k in _SENSITIVE_KEYS and isinstance(v, str) and v:
+            masked[k] = "****"
+        else:
+            masked[k] = v
+    return masked
+
+
 @router.get("/api/settings")
 async def get_settings():
-    return {"ok": True, "settings": read_cfg()}
+    return {"ok": True, "settings": _mask(read_cfg())}
 
 
 @router.post("/api/settings")
