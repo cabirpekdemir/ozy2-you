@@ -17,10 +17,13 @@ function showPanel(name) {
     n.classList.toggle('active', n.dataset.panel === name);
   });
 
-  // Update topbar title
+  // Update topbar title — use navEl.textContent (already translated by I18N._apply) first
   const navEl = document.querySelector(`[data-panel="${name}"] span[data-i18n]`);
-  const title = navEl ? (I18N.t(navEl.getAttribute('data-i18n')) || navEl.textContent) : name;
+  const title = navEl ? (navEl.textContent.trim() || I18N.t(navEl.getAttribute('data-i18n'))) : name;
   document.getElementById('topbar-title').textContent = title;
+
+  // Persist active panel to URL hash
+  if (history.replaceState) history.replaceState(null, '', '#' + name);
 
   // Lazy load panel
   if (!_loaded.has(name)) {
@@ -141,8 +144,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const lang = localStorage.getItem('ozy2_lang') || 'en';
   await I18N.load(lang);
 
-  // Show initial panel
-  showPanel('home');
+  // Restore panel from URL hash, or default to 'home'
+  const hashPanel = location.hash.slice(1);
+  showPanel(hashPanel || 'home');
 
   // Mobile: show sidebar toggle
   if (window.innerWidth <= 768) {

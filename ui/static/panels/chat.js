@@ -1,5 +1,65 @@
 /* OZY2 — Chat Panel */
 
+// ── Markdown renderer ──────────────────────────────────────────
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderMarkdown(raw) {
+  if (!raw) return '';
+
+  // Split on fenced code blocks (```lang\n...\n```)
+  const parts = [];
+  let last = 0;
+  const fence = /```(\w*)\n?([\s\S]*?)```/g;
+  let m;
+  while ((m = fence.exec(raw)) !== null) {
+    if (m.index > last) parts.push({t:'text', s: raw.slice(last, m.index)});
+    parts.push({t:'code', lang: m[1] || '', s: m[2].trim()});
+    last = m.index + m[0].length;
+  }
+  if (last < raw.length) parts.push({t:'text', s: raw.slice(last)});
+
+  return parts.map(p => {
+    if (p.t === 'code') {
+      const hdr = p.lang
+        ? `<div style="padding:4px 12px;font-size:11px;color:var(--accent);border-bottom:1px solid var(--card-border)">${escHtml(p.lang)}</div>`
+        : '';
+      return `<div style="margin:8px 0;background:var(--bg-base,#0e1018);border-radius:8px;border:1px solid var(--card-border);overflow:hidden">${hdr}<pre style="margin:0;padding:10px 12px;overflow-x:auto;font-size:12.5px;line-height:1.5;font-family:monospace"><code>${escHtml(p.s)}</code></pre></div>`;
+    }
+
+    let t = escHtml(p.s);
+    // Bold
+    t = t.replace(/\*\*(.+?)\*\*/gs, '<strong>$1</strong>');
+    // Inline code
+    t = t.replace(/`([^`\n]+)`/g, '<code style="background:rgba(255,255,255,0.08);border-radius:4px;padding:1px 5px;font-size:12px;font-family:monospace">$1</code>');
+    // Italic (avoid ** sequences)
+    t = t.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>');
+    // Headers
+    t = t.replace(/^### (.+)$/gm, '<h3 style="font-size:13px;font-weight:700;margin:10px 0 3px">$1</h3>');
+    t = t.replace(/^## (.+)$/gm,  '<h2 style="font-size:14px;font-weight:700;margin:12px 0 4px">$1</h2>');
+    t = t.replace(/^# (.+)$/gm,   '<h1 style="font-size:16px;font-weight:700;margin:14px 0 6px">$1</h1>');
+    // Unordered lists
+    const lines = t.split('\n');
+    const out = [];
+    let inList = false;
+    for (const line of lines) {
+      if (/^[-*] /.test(line)) {
+        if (!inList) { out.push('<ul style="margin:4px 0;padding-left:18px">'); inList = true; }
+        out.push(`<li style="margin:2px 0">${line.slice(2)}</li>`);
+      } else {
+        if (inList) { out.push('</ul>'); inList = false; }
+        out.push(line);
+      }
+    }
+    if (inList) out.push('</ul>');
+    t = out.join('\n');
+    // Trim edge newlines, then convert remaining to <br>
+    t = t.replace(/^\n+|\n+$/g, '').replace(/\n/g, '<br>');
+    return t;
+  }).join('');
+}
+
 function init_chat(el) {
   el.innerHTML = `
     <div id="chat-wrap" style="
@@ -147,13 +207,17 @@ function addMessage(role, text, id = null) {
   const bubble = document.createElement('div');
   bubble.style.cssText = `
     max-width:72%; padding:12px 16px; border-radius:${isUser ? '18px 4px 18px 18px' : '4px 18px 18px 18px'};
-    font-size:14px; line-height:1.6; white-space:pre-wrap; word-break:break-word;
+    font-size:14px; line-height:1.6; word-break:break-word;
     ${isUser
-      ? 'background:var(--accent);color:white'
+      ? 'background:var(--accent);color:white;white-space:pre-wrap'
       : 'background:var(--card-bg);border:1px solid var(--card-border);color:var(--text-1)'
     }
   `;
-  bubble.textContent = text;
+  if (isUser) {
+    bubble.textContent = text;
+  } else {
+    bubble.innerHTML = renderMarkdown(text);
+  }
 
   msgEl.appendChild(avatar);
   msgEl.appendChild(bubble);
@@ -223,7 +287,7 @@ async function sendMessage(preset = null) {
           const obj = JSON.parse(data);
           if (obj.chunk) {
             full += obj.chunk;
-            bubble.textContent = full;
+            bubble.innerHTML = renderMarkdown(full);
             messages.scrollTop = messages.scrollHeight;
           }
         } catch {}

@@ -210,20 +210,33 @@ from api.routers.tasks_router     import router as tasks_router
 from api.routers.memory_router    import router as memory_router
 from api.routers.telegram_router  import router as telegram_router
 from api.routers.briefing_router  import router as briefing_router
-from api.routers.youtube_router   import router as youtube_router
 from api.routers.books_router     import router as books_router
 from api.routers.smarthome_router import router as smarthome_router
 from api.routers.health_router    import router as health_router
 from api.routers.tts_router       import router as tts_router
 from api.routers.notes_router     import router as notes_router
 from api.routers.reminders_router import router as reminders_router
-from api.routers.pro_router         import router as pro_router
 from api.routers.roles_router       import router as roles_router
-from api.routers.business_router    import router as business_router
 from api.routers.github_router      import router as github_router
 from api.routers.marketplace_router import router as marketplace_router
 from api.routers.packages_router    import router as packages_router
-from api.routers.stocks_router      import router as stocks_router
+
+# ── Premium routers (optional — not included in open-source build) ─────────
+import logging as _log
+_premium_routers = []
+for _mod, _alias in [
+    ("api.routers.youtube_router",   "youtube_router"),
+    ("api.routers.pro_router",       "pro_router"),
+    ("api.routers.business_router",  "business_router"),
+    ("api.routers.stocks_router",    "stocks_router"),
+]:
+    try:
+        import importlib as _il
+        _m = _il.import_module(_mod)
+        _premium_routers.append(_m.router)
+        _log.info(f"[app] Premium router loaded: {_alias}")
+    except ModuleNotFoundError:
+        _log.info(f"[app] Premium router not available (open-source build): {_alias}")
 
 app.include_router(auth_router)
 app.include_router(setup_router)
@@ -237,20 +250,19 @@ app.include_router(tasks_router)
 app.include_router(memory_router)
 app.include_router(telegram_router)
 app.include_router(briefing_router)
-app.include_router(youtube_router)
 app.include_router(books_router)
 app.include_router(smarthome_router)
 app.include_router(health_router)
 app.include_router(tts_router)
 app.include_router(notes_router)
 app.include_router(reminders_router)
-app.include_router(pro_router)
 app.include_router(roles_router)
-app.include_router(business_router)
 app.include_router(github_router)
 app.include_router(marketplace_router)
 app.include_router(packages_router)
-app.include_router(stocks_router)
+# Premium routers (auto-loaded if available)
+for _r in _premium_routers:
+    app.include_router(_r)
 
 
 @app.get("/login", response_class=HTMLResponse)

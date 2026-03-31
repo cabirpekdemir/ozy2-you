@@ -15,6 +15,13 @@ class FactCreate(BaseModel):
     value: str
 
 
+@router.get("")
+async def get_memory_root():
+    """Root endpoint — returns facts and recent history."""
+    from core.memory import get_all_facts, get_history
+    return {"ok": True, "facts": get_all_facts(), "history": get_history(limit=20)}
+
+
 @router.get("/facts")
 async def get_facts():
     from core.memory import get_all_facts

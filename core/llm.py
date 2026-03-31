@@ -70,8 +70,9 @@ class LLMClient:
             return f"[LLM Error] {e}"
 
     async def stream(self, messages: list[dict],
-                     system: str = "") -> AsyncGenerator[str, None]:
-        """Streaming chat. Yields text chunks."""
+                     system: str = "",
+                     tools: list | None = None) -> AsyncGenerator[str, None]:
+        """Streaming chat. Yields text chunks. (tools accepted but not used in stream mode)"""
         try:
             if self.provider == "gemini":
                 async for chunk in self._stream_gemini(messages, system):
@@ -110,7 +111,7 @@ class LLMClient:
         from google.genai import types
         contents = self._to_gemini_contents(messages)
         cfg = types.GenerateContentConfig(system_instruction=system) if system else None
-        resp = self._client.models.generate_content(
+        resp = await self._client.aio.models.generate_content(
             model=self.model, contents=contents, config=cfg
         )
         return resp.text or ""
@@ -119,7 +120,7 @@ class LLMClient:
         from google.genai import types
         contents = self._to_gemini_contents(messages)
         cfg = types.GenerateContentConfig(system_instruction=system) if system else None
-        for chunk in self._client.models.generate_content_stream(
+        async for chunk in await self._client.aio.models.generate_content_stream(
             model=self.model, contents=contents, config=cfg
         ):
             if chunk.text:

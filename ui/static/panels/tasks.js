@@ -61,6 +61,7 @@ async function loadTasks() {
   const status = window._taskFilter === 'all' ? '' : window._taskFilter;
   try {
     const r = await fetch(`/api/tasks${status ? '?status=' + status : ''}`);
+    if (r.status === 401) { window.location.replace('/login'); return; }
     const d = await r.json();
     if (d.ok) renderTasks(d.tasks);
     else el.innerHTML = `<div style="color:var(--text-3);padding:20px 0">Failed to load tasks</div>`;
@@ -120,11 +121,18 @@ function filterTasks(status) {
 
 async function toggleTask(id, current) {
   const newStatus = current === 'done' ? 'todo' : 'done';
-  await fetch(`/api/tasks/${id}`, {
-    method: 'PATCH',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({status: newStatus})
-  });
+  try {
+    const r = await fetch(`/api/tasks/${id}`, {
+      method: 'PATCH',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({status: newStatus})
+    });
+    if (r.status === 401) { window.location.replace('/login'); return; }
+    if (!r.ok) { toast('Failed to update task', 'error'); return; }
+  } catch {
+    toast('Failed to update task', 'error');
+    return;
+  }
   loadTasks();
 }
 

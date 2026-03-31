@@ -62,3 +62,12 @@ ozy2.log
 htmlcov/
 .coverage
 landing/.wrangler/
+
+# ── Premium / paid package skill files (private: ozy2extra) ───────────────
+skills/pro_skills.py
+skills/social_skills.py
+skills/business_skills.py
+api/routers/pro_router.py
+api/routers/business_router.py
+api/routers/stocks_router.py
+api/routers/youtube_router.py

@@ -39,10 +39,13 @@ async def chat_stream(request: Request, message: str = ""):
     async def event_stream():
         try:
             async for chunk in agent.stream_think(message, permissions=permissions):
-                safe = chunk.replace("\n", "\\n")
                 yield f"data: {json.dumps({'chunk': chunk})}\n\n"
         except asyncio.CancelledError:
             pass
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"[chat/stream] error: {e}", exc_info=True)
+            yield f"data: {json.dumps({'chunk': f'[Error] {e}'})}\n\n"
         finally:
             yield "data: [DONE]\n\n"
 
