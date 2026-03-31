@@ -1,15 +1,29 @@
+# SPDX-License-Identifier: Elastic-2.0
+# Copyright (c) 2026 Cabir Pekdemir. All rights reserved.
+# Licensed under the Elastic License 2.0 — see LICENSE for details.
+
 """OZY2 — Settings router."""
 import json
+import os
 from pathlib import Path
 from fastapi import APIRouter, Request
+from fastapi.responses import HTMLResponse
 from api.state import reset_agent
-
-import threading
 
 TOKEN_FILE = Path(__file__).parent.parent.parent / "config" / "google_token.json"
 CREDS_FILE = Path(__file__).parent.parent.parent / "config" / "google_credentials.json"
 
-_auth_status = {"state": "idle", "error": ""}   # shared state for OAuth flow
+_auth_status  = {"state": "idle", "error": ""}   # shared state for OAuth flow
+_pending_flow = None                              # flow kept between /start and /callback
+
+SCOPES = [
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.send",
+    "https://www.googleapis.com/auth/gmail.modify",
+    "https://www.googleapis.com/auth/calendar",
+    "https://www.googleapis.com/auth/drive.readonly",
+    "https://www.googleapis.com/auth/drive.file",
+]
 
 PACKAGES_FILE = Path(__file__).parent.parent.parent / "config" / "packages.json"
 
@@ -67,36 +81,73 @@ async def save_credentials(request: Request):
 
 
 @router.post("/api/google/auth/start")
-async def start_google_auth():
-    """Start OAuth flow in background — opens browser automatically."""
-    global _auth_status
+async def start_google_auth(request: Request):
+    """Generate Google OAuth URL — returns auth_url for frontend to open in new tab."""
+    global _auth_status, _pending_flow
     if not CREDS_FILE.exists():
         return {"ok": False, "error": "credentials_missing"}
-    if _auth_status["state"] == "running":
-        return {"ok": True, "state": "running"}
 
-    def _run_flow():
-        global _auth_status
-        _auth_status = {"state": "running", "error": ""}
-        try:
-            from google_auth_oauthlib.flow import InstalledAppFlow
-            SCOPES = [
-                "https://www.googleapis.com/auth/gmail.readonly",
-                "https://www.googleapis.com/auth/gmail.send",
-                "https://www.googleapis.com/auth/gmail.modify",
-                "https://www.googleapis.com/auth/calendar",
-                "https://www.googleapis.com/auth/drive.readonly",
-                "https://www.googleapis.com/auth/drive.file",
-            ]
-            flow = InstalledAppFlow.from_client_secrets_file(str(CREDS_FILE), SCOPES)
-            creds = flow.run_local_server(port=0, open_browser=True)
-            TOKEN_FILE.write_text(creds.to_json())
-            _auth_status = {"state": "done", "error": ""}
-        except Exception as e:
-            _auth_status = {"state": "error", "error": str(e)}
+    try:
+        from google_auth_oauthlib.flow import Flow
 
-    threading.Thread(target=_run_flow, daemon=True).start()
-    return {"ok": True, "state": "running"}
+        # Detect real scheme/host (handles Cloudflare / nginx forwarding)
+        proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+        host  = (request.headers.get("x-forwarded-host")
+                 or request.headers.get("host")
+                 or request.url.netloc)
+        redirect_uri = f"{proto}://{host}/api/google/auth/callback"
+
+        flow = Flow.from_client_secrets_file(str(CREDS_FILE), scopes=SCOPES, redirect_uri=redirect_uri)
+        auth_url, _ = flow.authorization_url(access_type="offline", prompt="consent")
+
+        _pending_flow = flow
+        _auth_status  = {"state": "waiting", "error": ""}
+        return {"ok": True, "auth_url": auth_url}
+    except Exception as e:
+        _auth_status = {"state": "error", "error": str(e)}
+        return {"ok": False, "error": str(e)}
+
+
+@router.get("/api/google/auth/callback")
+async def google_auth_callback(request: Request):
+    """Receive OAuth code from Google, exchange for token and save."""
+    global _auth_status, _pending_flow
+
+    if _pending_flow is None:
+        return HTMLResponse("<h2>No pending auth session. Please try again from OZY2 Settings.</h2>", status_code=400)
+
+    try:
+        # Reconstruct full URL with correct scheme (nginx strips https)
+        proto    = request.headers.get("x-forwarded-proto", request.url.scheme)
+        url_str  = str(request.url)
+        if proto == "https" and url_str.startswith("http://"):
+            url_str = "https://" + url_str[7:]
+
+        # Allow HTTP transport for local dev only
+        if request.url.scheme == "http" and not proto == "https":
+            os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+
+        _pending_flow.fetch_token(authorization_response=url_str)
+        creds = _pending_flow.credentials
+        TOKEN_FILE.write_text(creds.to_json())
+        _auth_status  = {"state": "done", "error": ""}
+        _pending_flow = None
+
+        return HTMLResponse("""<!DOCTYPE html>
+<html><head><title>OZY2 — Google Connected</title>
+<style>body{margin:0;display:flex;align-items:center;justify-content:center;
+height:100vh;background:#0d0d0d;color:#fff;font-family:system-ui,sans-serif;text-align:center}</style>
+</head><body>
+<div><div style="font-size:48px">✓</div>
+<h2 style="margin:.5rem 0">Google Connected!</h2>
+<p style="color:#888">This tab will close automatically…</p></div>
+<script>setTimeout(()=>{window.close();setTimeout(()=>{window.location.href='/'},500)},1800)</script>
+</body></html>""")
+
+    except Exception as e:
+        _auth_status  = {"state": "error", "error": str(e)}
+        _pending_flow = None
+        return HTMLResponse(f"<h2>Auth Error</h2><pre>{e}</pre>", status_code=400)
 
 
 @router.get("/api/google/auth/status")

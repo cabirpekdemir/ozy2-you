@@ -6,6 +6,9 @@ function init_settings(el) {
 
       <h2 style="font-size:20px;font-weight:700;margin:0 0 20px">Settings</h2>
 
+      <!-- Active Plan Banner -->
+      <div id="plan-banner" style="margin-bottom:16px"></div>
+
       <!-- AI Provider -->
       <div class="card" style="padding:20px;margin-bottom:16px">
         <div class="card-header" style="margin-bottom:16px;font-size:15px;font-weight:600">AI Provider</div>
@@ -94,20 +97,34 @@ function init_settings(el) {
         <!-- Not connected state: credentials + connect button -->
         <div id="google-setup-section" style="display:none">
           <div style="font-size:13px;color:var(--text-3);margin-bottom:12px;line-height:1.6">
-            Paste your <strong>google_credentials.json</strong> content below, then click Connect.<br>
+            Paste or upload your <strong>google_credentials.json</strong>, then click Connect.<br>
             <a href="https://console.cloud.google.com/apis/credentials" target="_blank"
                style="color:var(--accent,#4f8ef7);font-size:12px">
               Get credentials from Google Cloud Console →
             </a>
           </div>
+
+          <!-- File upload row -->
+          <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+            <label for="s-google-creds-file" class="btn btn-ghost"
+              style="font-size:12px;cursor:pointer;padding:6px 12px;flex-shrink:0">
+              📂 Browse file
+            </label>
+            <span id="s-google-creds-filename" style="font-size:12px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+              No file chosen
+            </span>
+            <input type="file" id="s-google-creds-file" accept=".json,application/json"
+              style="display:none" onchange="loadCredentialsFile(this)">
+          </div>
+
           <textarea id="s-google-creds" class="input"
-            placeholder='{"installed": {"client_id": "...", "client_secret": "..."}}'
-            style="width:100%;height:90px;font-size:11px;font-family:monospace;margin-bottom:12px;resize:vertical"></textarea>
+            placeholder='{"web": {"client_id": "...", "client_secret": "..."}}'
+            style="width:100%;height:80px;font-size:11px;font-family:monospace;margin-bottom:12px;resize:vertical"></textarea>
           <button class="btn btn-primary" style="width:100%" onclick="connectGoogle()">
             🔗 Connect Google Account
           </button>
           <div id="google-auth-progress" style="display:none;margin-top:10px;font-size:13px;color:var(--text-3);text-align:center">
-            ⏳ Browser opened — complete sign-in there…
+            ⏳ Waiting for Google sign-in in the new tab…
           </div>
         </div>
 
@@ -245,7 +262,50 @@ function updateModelOptions() {
   sel.innerHTML = models.map(m => `<option value="${m}">${m}</option>`).join('');
 }
 
+async function loadPlanBanner() {
+  const banner = document.getElementById('plan-banner');
+  if (!banner) return;
+  try {
+    const [settingsRes, meRes] = await Promise.all([
+      fetch('/api/settings').then(r => r.json()),
+      fetch('/api/auth/me').then(r => r.json()),
+    ]);
+    const pkg = settingsRes.settings?.package || 'full';
+    const role = meRes.role || 'admin';
+    const planMeta = {
+      you:      { label: 'OZY2 You',      color: '#4f8ef7', icon: '🧑' },
+      pro:      { label: 'OZY2 Pro',      color: '#a855f7', icon: '⚡' },
+      social:   { label: 'OZY2 Social',   color: '#f43f5e', icon: '🌐' },
+      business: { label: 'OZY2 Business', color: '#f59e0b', icon: '🏢' },
+      full:     { label: 'OZY2 Full',     color: '#10b981', icon: '✨' },
+    };
+    const roleMeta = {
+      admin:        { label: 'Admin',        icon: '🛡️', color: '#10b981' },
+      collaborator: { label: 'Collaborator', icon: '🤝', color: '#3b82f6' },
+      observer:     { label: 'Observer',     icon: '👁️', color: '#f59e0b' },
+    };
+    const plan = planMeta[pkg] || planMeta.full;
+    const roleInfo = roleMeta[role] || { label: role, icon: '👤', color: '#6b7280' };
+    banner.innerHTML = `
+      <div style="display:flex;gap:10px;align-items:center;padding:14px 18px;
+        background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;
+        border-left:4px solid ${plan.color}">
+        <span style="font-size:22px">${plan.icon}</span>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:600">${plan.label}</div>
+          <div style="font-size:12px;color:var(--text-3)">Active plan</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:5px 12px;
+          background:${roleInfo.color}22;border-radius:20px;border:1px solid ${roleInfo.color}44">
+          <span style="font-size:14px">${roleInfo.icon}</span>
+          <span style="font-size:12px;font-weight:600;color:${roleInfo.color}">${roleInfo.label}</span>
+        </div>
+      </div>`;
+  } catch(e) { banner.innerHTML = ''; }
+}
+
 async function loadCurrentSettings() {
+  loadPlanBanner();
   try {
     const r = await fetch('/api/settings');
     const d = await r.json();
@@ -349,6 +409,19 @@ async function checkGoogleStatus() {
   }
 }
 
+function loadCredentialsFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const label = document.getElementById('s-google-creds-filename');
+  if (label) label.textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const ta = document.getElementById('s-google-creds');
+    if (ta) ta.value = e.target.result;
+  };
+  reader.readAsText(file);
+}
+
 async function connectGoogle() {
   const credsEl = document.getElementById('s-google-creds');
   const progress = document.getElementById('google-auth-progress');
@@ -368,8 +441,10 @@ async function connectGoogle() {
   const d2 = await r2.json();
   if (!d2.ok) { toast(d2.error || 'Could not start auth', 'error'); return; }
 
+  // Open Google sign-in in a new tab (works on headless servers too)
+  window.open(d2.auth_url, '_blank', 'width=600,height=700,noopener');
   if (progress) progress.style.display = 'block';
-  toast('Browser opened — sign in with Google', 'success');
+  toast('Sign in with Google in the new tab', 'success');
 
   // Poll until done
   const poll = setInterval(async () => {

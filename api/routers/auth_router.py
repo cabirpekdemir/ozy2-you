@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: Elastic-2.0
+# Copyright (c) 2026 Cabir Pekdemir. All rights reserved.
+# Licensed under the Elastic License 2.0 — see LICENSE for details.
+
 """OZY2 — Authentication (PIN + Session)"""
 import hashlib
 import json
@@ -13,8 +17,8 @@ CONFIG = Path(__file__).parent.parent.parent / "config" / "settings.json"
 COOKIE = "ozy2_session"
 SESSION_TTL = 86400 * 7   # 7 days
 
-# In-memory session store  {token: expiry_ts}
-_sessions: dict[str, float] = {}
+_sessions: dict[str, dict] = {}
+# {token: {"expiry": float, "role_id": str, "permissions": list[str]}}
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -30,22 +34,50 @@ def _hash(pin: str) -> str:
     return hashlib.sha256(pin.strip().encode()).hexdigest()
 
 
-def _create_session() -> str:
+def _create_session(role_id: str = "admin", permissions: list = None) -> str:
     token = secrets.token_urlsafe(32)
-    _sessions[token] = time.time() + SESSION_TTL
+    _sessions[token] = {
+        "expiry": time.time() + SESSION_TTL,
+        "role_id": role_id,
+        "permissions": permissions if permissions is not None else ["*"],
+    }
     return token
 
 
 def is_valid_session(token: str | None) -> bool:
     if not token:
         return False
-    expiry = _sessions.get(token)
-    if expiry is None:
+    data = _sessions.get(token)
+    if data is None:
         return False
-    if time.time() > expiry:
+    if time.time() > data["expiry"]:
         _sessions.pop(token, None)
         return False
     return True
+
+
+ROLES_FILE = Path(__file__).parent.parent.parent / "config" / "roles.json"
+
+
+def _load_roles() -> list:
+    try:
+        return json.loads(ROLES_FILE.read_text()).get("roles", [])
+    except Exception:
+        return []
+
+
+def get_session_role(token: str) -> str:
+    data = _sessions.get(token)
+    if not data or time.time() > data["expiry"]:
+        return "guest"
+    return data.get("role_id", "admin")
+
+
+def get_session_permissions(token: str) -> list:
+    data = _sessions.get(token)
+    if not data or time.time() > data["expiry"]:
+        return []
+    return data.get("permissions", ["*"])
 
 
 def pin_required() -> bool:
@@ -76,22 +108,30 @@ class ChangePinRequest(BaseModel):
 @router.post("/login")
 async def login(req: PinRequest, response: Response):
     cfg = _load()
-    stored = cfg.get("pin_hash", "")
+    stored_admin = cfg.get("pin_hash", "")
+    hashed = _hash(req.pin)
 
-    # If no PIN set — auto-approve (local mode)
-    if not stored:
-        token = _create_session()
-        response.set_cookie(COOKIE, token, max_age=SESSION_TTL,
-                            httponly=True, samesite="strict")
-        return {"ok": True}
+    # No PIN set → auto admin session
+    if not stored_admin:
+        token = _create_session("admin", ["*"])
+        response.set_cookie(COOKIE, token, max_age=SESSION_TTL, httponly=True, samesite="lax")
+        return {"ok": True, "role": "admin"}
 
-    if _hash(req.pin) != stored:
-        return JSONResponse({"ok": False, "error": "Wrong PIN"}, status_code=401)
+    # Check admin PIN
+    if hashed == stored_admin:
+        token = _create_session("admin", ["*"])
+        response.set_cookie(COOKIE, token, max_age=SESSION_TTL, httponly=True, samesite="lax")
+        return {"ok": True, "role": "admin"}
 
-    token = _create_session()
-    response.set_cookie(COOKIE, token, max_age=SESSION_TTL,
-                        httponly=True, samesite="strict")
-    return {"ok": True}
+    # Check role PINs
+    for role in _load_roles():
+        role_hash = role.get("pin_hash")
+        if role_hash and hashed == role_hash:
+            token = _create_session(role["id"], role.get("permissions", []))
+            response.set_cookie(COOKIE, token, max_age=SESSION_TTL, httponly=True, samesite="lax")
+            return {"ok": True, "role": role["id"]}
+
+    return JSONResponse({"ok": False, "error": "Wrong PIN"}, status_code=401)
 
 
 @router.post("/logout")
@@ -131,4 +171,17 @@ async def status(request: Request):
         "authenticated": is_valid_session(token) or not pin_required(),
         "pin_set": pin_required(),
         "remote_access": remote_access_enabled(),
+    }
+
+
+@router.get("/me")
+async def me(request: Request):
+    token = request.cookies.get(COOKIE)
+    if not is_valid_session(token) and pin_required():
+        return {"ok": False, "authenticated": False}
+    return {
+        "ok": True,
+        "authenticated": True,
+        "role": get_session_role(token),
+        "permissions": get_session_permissions(token),
     }

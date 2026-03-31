@@ -48,18 +48,23 @@ const SKILL_CATALOG = [
   },
   {
     id: 'github',   name: 'GitHub',    icon: '🐙',
-    desc: 'Repos, issues, pull requests, code review',
-    status: 'coming_soon', category: 'Productivity',
+    desc: 'Repos, issues, pull requests, commits — GitHub REST API',
+    status: 'active', category: 'Productivity',
   },
   {
     id: 'youtube',  name: 'YouTube',   icon: '▶️',
-    desc: 'Channel analytics and video management',
-    status: 'coming_soon', category: 'Creative',
+    desc: 'Follow channels and watch your feed via RSS — no API key needed',
+    status: 'active', category: 'Creative',
   },
   {
     id: 'content',  name: 'Content Studio', icon: '🎨',
     desc: 'AI-powered content creation and scheduling',
-    status: 'coming_soon', category: 'Creative',
+    status: 'active', category: 'Creative',
+  },
+  {
+    id: 'marketplace', name: 'Marketplace', icon: '🛍️',
+    desc: 'Browse, install, and publish OZY2 skills · 15% platform commission',
+    status: 'active', category: 'System',
   },
 ];
 

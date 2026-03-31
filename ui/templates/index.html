@@ -79,6 +79,18 @@
         <span class="nav-icon">🗺️</span>
         <span data-i18n="nav.projects">Projects</span>
       </div>
+      <div class="nav-item" data-panel="notes" onclick="showPanel('notes')">
+        <span class="nav-icon">🗒️</span>
+        <span data-i18n="nav.notes">Notes</span>
+      </div>
+      <div class="nav-item" data-panel="reminders" onclick="showPanel('reminders')">
+        <span class="nav-icon">⏰</span>
+        <span data-i18n="nav.reminders">Reminders</span>
+      </div>
+      <div class="nav-item" data-panel="lesson" onclick="showPanel('lesson')">
+        <span class="nav-icon">🎓</span>
+        <span data-i18n="nav.lesson">Lesson Planner</span>
+      </div>
       <div class="nav-item" data-panel="drive" onclick="showPanel('drive')">
         <span class="nav-icon">📁</span>
         <span data-i18n="nav.drive">Drive</span>
@@ -86,6 +98,18 @@
       <div class="nav-item" data-panel="github" onclick="showPanel('github')">
         <span class="nav-icon">🐙</span>
         <span data-i18n="nav.github">GitHub</span>
+      </div>
+      <div class="nav-item" data-panel="notion" onclick="showPanel('notion')">
+        <span class="nav-icon">🔲</span>
+        <span data-i18n="nav.notion">Notion</span>
+      </div>
+      <div class="nav-item" data-panel="obsidian" onclick="showPanel('obsidian')">
+        <span class="nav-icon">💎</span>
+        <span data-i18n="nav.obsidian">Obsidian</span>
+      </div>
+      <div class="nav-item" data-panel="trello" onclick="showPanel('trello')">
+        <span class="nav-icon">📋</span>
+        <span data-i18n="nav.trello">Trello</span>
       </div>
       <div class="nav-item" data-panel="workspace" onclick="showPanel('workspace')">
         <span class="nav-icon">🗂️</span>
@@ -111,15 +135,65 @@
         <span class="nav-icon">📖</span>
         <span data-i18n="nav.books">Books</span>
       </div>
+      <div class="nav-item" data-panel="stocks" onclick="showPanel('stocks')">
+        <span class="nav-icon">📈</span>
+        <span data-i18n="nav.stocks">Stocks</span>
+      </div>
       <div class="nav-item" data-panel="smarthome" onclick="showPanel('smarthome')">
         <span class="nav-icon">🏠</span>
         <span data-i18n="nav.smarthome">Smart Home</span>
+      </div>
+
+      <div class="nav-section-label" data-i18n="navgroup.business">BUSINESS</div>
+      <div class="nav-item" data-panel="slack" onclick="showPanel('slack')">
+        <span class="nav-icon">💬</span>
+        <span data-i18n="nav.slack">Slack</span>
+      </div>
+      <div class="nav-item" data-panel="teams" onclick="showPanel('teams')">
+        <span class="nav-icon">🟦</span>
+        <span data-i18n="nav.teams">Teams</span>
+      </div>
+      <div class="nav-item" data-panel="jira" onclick="showPanel('jira')">
+        <span class="nav-icon">🔵</span>
+        <span data-i18n="nav.jira">Jira</span>
+      </div>
+      <div class="nav-item" data-panel="linear" onclick="showPanel('linear')">
+        <span class="nav-icon">🔷</span>
+        <span data-i18n="nav.linear">Linear</span>
+      </div>
+      <div class="nav-item" data-panel="asana" onclick="showPanel('asana')">
+        <span class="nav-icon">🔴</span>
+        <span data-i18n="nav.asana">Asana</span>
+      </div>
+      <div class="nav-item" data-panel="hubspot" onclick="showPanel('hubspot')">
+        <span class="nav-icon">🟠</span>
+        <span data-i18n="nav.hubspot">HubSpot</span>
+      </div>
+      <div class="nav-item" data-panel="analytics" onclick="showPanel('analytics')">
+        <span class="nav-icon">📊</span>
+        <span data-i18n="nav.analytics">Analytics</span>
+      </div>
+      <div class="nav-item" data-panel="meeting" onclick="showPanel('meeting')">
+        <span class="nav-icon">🎙️</span>
+        <span data-i18n="nav.meeting">Meetings</span>
+      </div>
+      <div class="nav-item" data-panel="invoice" onclick="showPanel('invoice')">
+        <span class="nav-icon">🧾</span>
+        <span data-i18n="nav.invoice">Invoices</span>
+      </div>
+      <div class="nav-item" data-panel="roles" onclick="showPanel('roles')">
+        <span class="nav-icon">🛡️</span>
+        <span data-i18n="nav.roles">Roles</span>
       </div>
 
       <div class="nav-section-label" data-i18n="navgroup.system">SYSTEM</div>
       <div class="nav-item" data-panel="skills" onclick="showPanel('skills')">
         <span class="nav-icon">⚡</span>
         <span data-i18n="nav.skills">Skills</span>
+      </div>
+      <div class="nav-item" data-panel="marketplace" onclick="showPanel('marketplace')">
+        <span class="nav-icon">🛍️</span>
+        <span data-i18n="nav.marketplace">Marketplace</span>
       </div>
       <div class="nav-item" data-panel="automations" onclick="showPanel('automations')">
         <span class="nav-icon">⚙️</span>
@@ -128,6 +202,16 @@
     </nav>
 
     <div class="sidebar-footer">
+      <div id="sidebar-plan-badge" style="padding:8px 12px;margin-bottom:4px;display:none">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;
+          border-radius:8px;background:var(--card-bg);border:1px solid var(--card-border)">
+          <span id="sidebar-plan-icon" style="font-size:16px">✨</span>
+          <div style="flex:1;min-width:0">
+            <div id="sidebar-plan-name" style="font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Full</div>
+            <div id="sidebar-role-name" style="font-size:10px;color:var(--text-3)">Admin</div>
+          </div>
+        </div>
+      </div>
       <div class="nav-item" data-panel="settings" onclick="showPanel('settings')">
         <span class="nav-icon">🔧</span>
         <span data-i18n="nav.settings">Settings</span>
@@ -168,9 +252,27 @@
       <div class="panel" id="panel-youtube"></div>
       <div class="panel" id="panel-content"></div>
       <div class="panel" id="panel-debate"></div>
+      <div class="panel" id="panel-notes"></div>
+      <div class="panel" id="panel-reminders"></div>
+      <div class="panel" id="panel-lesson"></div>
+      <div class="panel" id="panel-notion"></div>
+      <div class="panel" id="panel-obsidian"></div>
+      <div class="panel" id="panel-trello"></div>
+      <div class="panel" id="panel-stocks"></div>
       <div class="panel" id="panel-books"></div>
       <div class="panel" id="panel-smarthome"></div>
+      <div class="panel" id="panel-slack"></div>
+      <div class="panel" id="panel-teams"></div>
+      <div class="panel" id="panel-jira"></div>
+      <div class="panel" id="panel-linear"></div>
+      <div class="panel" id="panel-asana"></div>
+      <div class="panel" id="panel-hubspot"></div>
+      <div class="panel" id="panel-analytics"></div>
+      <div class="panel" id="panel-meeting"></div>
+      <div class="panel" id="panel-invoice"></div>
+      <div class="panel" id="panel-roles"></div>
       <div class="panel" id="panel-skills"></div>
+      <div class="panel" id="panel-marketplace"></div>
       <div class="panel" id="panel-automations"></div>
       <div class="panel" id="panel-settings"></div>
 

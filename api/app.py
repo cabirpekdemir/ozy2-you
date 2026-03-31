@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: Elastic-2.0
+# Copyright (c) 2026 Cabir Pekdemir. All rights reserved.
+# Licensed under the Elastic License 2.0 — see LICENSE for details.
+
 """OZY2 — FastAPI Application"""
 import logging
 import sys
@@ -69,7 +73,16 @@ class LocalhostOnlyMiddleware(BaseHTTPMiddleware):
 
 
 # ── Auth Middleware: Redirect to /login if PIN is set and no valid session ────
-_PUBLIC = {"/login", "/api/auth/login", "/api/auth/status", "/static", "/favicon"}
+_PUBLIC = {"/login", "/api/auth/login", "/api/auth/status", "/api/google/auth/callback", "/static", "/favicon"}
+
+# Internal bypass token — health check uses this to call internal endpoints
+import secrets as _secrets
+_INTERNAL_TOKEN = _secrets.token_urlsafe(32)
+
+
+def get_internal_token() -> str:
+    return _INTERNAL_TOKEN
+
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: FastAPIRequest, call_next):
@@ -78,6 +91,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         # Always allow public paths
         if any(path.startswith(p) for p in _PUBLIC):
+            return await call_next(request)
+
+        # Internal health check bypass
+        if request.headers.get("X-OZY2-Internal") == _INTERNAL_TOKEN:
             return await call_next(request)
 
         # If no PIN set — allow everything
@@ -171,6 +188,14 @@ from api.routers.books_router     import router as books_router
 from api.routers.smarthome_router import router as smarthome_router
 from api.routers.health_router    import router as health_router
 from api.routers.tts_router       import router as tts_router
+from api.routers.notes_router     import router as notes_router
+from api.routers.reminders_router import router as reminders_router
+from api.routers.pro_router         import router as pro_router
+from api.routers.roles_router       import router as roles_router
+from api.routers.business_router    import router as business_router
+from api.routers.github_router      import router as github_router
+from api.routers.marketplace_router import router as marketplace_router
+from api.routers.packages_router    import router as packages_router
 
 app.include_router(auth_router)
 app.include_router(setup_router)
@@ -189,6 +214,14 @@ app.include_router(books_router)
 app.include_router(smarthome_router)
 app.include_router(health_router)
 app.include_router(tts_router)
+app.include_router(notes_router)
+app.include_router(reminders_router)
+app.include_router(pro_router)
+app.include_router(roles_router)
+app.include_router(business_router)
+app.include_router(github_router)
+app.include_router(marketplace_router)
+app.include_router(packages_router)
 
 
 @app.get("/login", response_class=HTMLResponse)

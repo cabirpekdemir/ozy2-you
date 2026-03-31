@@ -1,0 +1,58 @@
+{
+  "roles": [
+    {
+      "id": "admin",
+      "name": "Admin",
+      "level": 99,
+      "color": "#10b981",
+      "icon": "🛡️",
+      "pin_hash": null,
+      "is_default": true,
+      "permissions": ["*"]
+    },
+    {
+      "id": "collaborator",
+      "name": "Collaborator",
+      "level": 2,
+      "color": "#3b82f6",
+      "icon": "🤝",
+      "pin_hash": null,
+      "is_default": true,
+      "permissions": [
+        "email.read", "email.write",
+        "calendar.read", "calendar.write",
+        "drive.read",
+        "task.read", "task.write",
+        "slack.read", "slack.write",
+        "teams.read", "teams.write",
+        "jira.read", "jira.write",
+        "linear.read", "linear.write",
+        "asana.read", "asana.write",
+        "confluence.read",
+        "analytics.read",
+        "meeting.read"
+      ]
+    },
+    {
+      "id": "observer",
+      "name": "Observer",
+      "level": 1,
+      "color": "#f59e0b",
+      "icon": "👁️",
+      "pin_hash": null,
+      "is_default": true,
+      "permissions": [
+        "email.read",
+        "calendar.read",
+        "drive.read",
+        "task.read",
+        "slack.read",
+        "teams.read",
+        "jira.read",
+        "linear.read",
+        "asana.read",
+        "analytics.read"
+      ]
+    }
+  ]
+}

@@ -61,3 +61,4 @@ ozy2.log
 .pytest_cache/
 htmlcov/
 .coverage
+landing/.wrangler/

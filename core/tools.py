@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: Elastic-2.0
+# Copyright (c) 2026 Cabir Pekdemir. All rights reserved.
+# Licensed under the Elastic License 2.0 — see LICENSE for details.
+
 """
 OZY2 — Tool Registry
 Single responsibility: register, discover and dispatch tools/skills.
@@ -8,11 +12,11 @@ from typing import Callable, Any
 
 logger = logging.getLogger(__name__)
 
-_registry: dict = {}  # tool_name → {fn, schema, package}
+_registry: dict = {}  # tool_name → {fn, schema, package, permission}
 
 
 def register(name: str, description: str, params: dict = None,
-             package: str = "core"):
+             package: str = "core", permission: str = "*"):
     """
     Decorator-style registration:
 
@@ -37,7 +41,7 @@ def register(name: str, description: str, params: dict = None,
     }
 
     def decorator(fn: Callable):
-        _registry[name] = {"fn": fn, "schema": schema, "package": package}
+        _registry[name] = {"fn": fn, "schema": schema, "package": package, "permission": permission}
         logger.debug(f"[Tools] Registered: {name} ({package})")
         return fn
 
@@ -45,9 +49,9 @@ def register(name: str, description: str, params: dict = None,
 
 
 def register_fn(name: str, fn: Callable, description: str = "",
-                params: dict = None, package: str = "core"):
+                params: dict = None, package: str = "core", permission: str = "*"):
     """Non-decorator variant for programmatic registration."""
-    reg_decorator = register(name, description, params or {}, package)
+    reg_decorator = register(name, description, params or {}, package, permission)
     reg_decorator(fn)
 
 
@@ -83,6 +87,45 @@ async def dispatch(tool_name: str, args: dict) -> Any:
 
 def is_known(name: str) -> bool:
     return name in _registry
+
+
+def get_permission(name: str) -> str:
+    """Return the required permission tag for a tool."""
+    return _registry.get(name, {}).get("permission", "*")
+
+
+def get_all_schemas_for_permissions(permissions: list, packages=None) -> list:
+    """Return tool schemas filtered by both package AND user's permission list."""
+    has_all = "*" in permissions
+    tools = []
+    for name, meta in _registry.items():
+        if packages is not None and meta["package"] not in packages:
+            continue
+        if not has_all:
+            perm = meta.get("permission", "*")
+            if perm != "*" and perm not in permissions:
+                continue
+        tools.append(meta["schema"])
+    return tools
+
+
+async def dispatch_with_permission(tool_name: str, args: dict, permissions: list = None) -> Any:
+    """Call a tool, checking permission first."""
+    if tool_name not in _registry:
+        return {"error": f"Unknown tool: {tool_name}"}
+    if permissions is not None:
+        perm = _registry[tool_name].get("permission", "*")
+        if perm != "*" and "*" not in permissions and perm not in permissions:
+            return {"error": f"Permission denied: requires '{perm}'"}
+    try:
+        fn = _registry[tool_name]["fn"]
+        result = fn(**args)
+        if hasattr(result, "__await__"):
+            result = await result
+        return result
+    except Exception as e:
+        logger.error(f"[Tools] {tool_name} error: {e}")
+        return {"error": str(e)}
 
 
 def unregister(name: str):

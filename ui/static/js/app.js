@@ -75,6 +75,26 @@ function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('hidden');
 }
 
+// ── Sidebar plan badge ─────────────────────────────────────────
+async function loadSidebarPlanBadge() {
+  try {
+    const [sr, mr] = await Promise.all([
+      fetch('/api/settings').then(r => r.json()),
+      fetch('/api/auth/me').then(r => r.json()),
+    ]);
+    const pkg = sr.settings?.package || 'full';
+    const role = mr.role || 'admin';
+    const plans = { you:'🧑 You', pro:'⚡ Pro', social:'🌐 Social', business:'🏢 Business', full:'✨ Full' };
+    const roles = { admin:'🛡️ Admin', collaborator:'🤝 Collaborator', observer:'👁️ Observer' };
+    const badge = document.getElementById('sidebar-plan-badge');
+    if (!badge) return;
+    document.getElementById('sidebar-plan-icon').textContent = plans[pkg]?.split(' ')[0] || '✨';
+    document.getElementById('sidebar-plan-name').textContent = (plans[pkg] || pkg).split(' ').slice(1).join(' ') || pkg;
+    document.getElementById('sidebar-role-name').textContent = (roles[role] || role).split(' ').slice(1).join(' ') || role;
+    badge.style.display = 'block';
+  } catch {}
+}
+
 // ── Inactivity auto-logout (remote access only) ───────────────
 const IDLE_MS = 5 * 60 * 1000; // 5 dakika
 let _idleTimer = null;
@@ -131,4 +151,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Hareketsizlik timer'ını başlat (remote access aktifse)
   _checkRemoteAndStartIdle();
+
+  // Sidebar plan badge
+  loadSidebarPlanBadge();
 });

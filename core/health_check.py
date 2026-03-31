@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: Elastic-2.0
+# Copyright (c) 2026 Cabir Pekdemir. All rights reserved.
+# Licensed under the Elastic License 2.0 — see LICENSE for details.
+
 """
 OZY2 — Otomatik Sağlık Kontrol Sistemi
 Tüm servisleri test eder, sonuçları Telegram'a gönderir.
@@ -97,8 +101,14 @@ async def _run_check(client: httpx.AsyncClient, base: str, check: tuple) -> dict
 async def run_all_checks() -> list[dict]:
     port  = _get_port()
     base  = f"http://127.0.0.1:{port}"
+    # Get internal bypass token (generated at startup in app.py)
+    try:
+        from api.app import get_internal_token
+        headers = {"X-OZY2-Internal": get_internal_token()}
+    except Exception:
+        headers = {}
     results = []
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(headers=headers) as client:
         tasks = [_run_check(client, base, c) for c in CHECKS]
         results = await asyncio.gather(*tasks, return_exceptions=False)
     return list(results)

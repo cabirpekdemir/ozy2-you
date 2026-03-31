@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: Elastic-2.0
+# Copyright (c) 2026 Cabir Pekdemir. All rights reserved.
+# Licensed under the Elastic License 2.0 — see LICENSE for details.
+
 """
 OZY2 — Agent
 Coordination only. Receives a message, decides what to do, returns response.
@@ -36,7 +40,7 @@ class Agent:
         self.llm = llm
 
     async def think(self, user_message: str,
-                    notify_fn=None) -> str:
+                    notify_fn=None, permissions: list = None) -> str:
         """
         Main entry point. Returns assistant response text.
         notify_fn: optional async callback for streaming updates to UI.
@@ -62,15 +66,20 @@ class Agent:
             _cfg  = _json.loads((_Path(__file__).parent.parent / "config" / "settings.json").read_text())
             _pkg  = _cfg.get("package", "full")
             _TIER_PACKAGES = {
-                "you":    {"core", "you"},
-                "pro":    {"core", "you", "pro"},
-                "social": {"core", "you", "pro", "social"},
-                "full":   None,  # None = all packages
+                "you":      {"core", "you"},
+                "pro":      {"core", "you", "pro"},
+                "social":   {"core", "you", "pro", "social"},
+                "business": {"core", "you", "pro", "social", "business"},
+                "full":     None,  # None = all packages
             }
             _allowed = _TIER_PACKAGES.get(_pkg)
         except Exception:
             _allowed = None
-        tools = get_all_schemas(packages=_allowed)
+        from core.tools import get_all_schemas_for_permissions
+        if permissions is not None:
+            tools = get_all_schemas_for_permissions(permissions, packages=_allowed)
+        else:
+            tools = get_all_schemas(packages=_allowed)
 
         # Call LLM
         response = await self.llm.chat(
@@ -89,7 +98,8 @@ class Agent:
                     call.get("function", {}).get("arguments", "{}")
                 )
                 if is_known(name):
-                    result = await dispatch(name, args)
+                    from core.tools import dispatch_with_permission
+                    result = await dispatch_with_permission(name, args, permissions=permissions)
                     tool_results.append({"tool": name, "result": result})
 
             # Second LLM call with tool results
@@ -104,7 +114,7 @@ class Agent:
 
         return text
 
-    async def stream_think(self, user_message: str):
+    async def stream_think(self, user_message: str, permissions: list = None):
         """Streaming version — yields text chunks."""
         from datetime import datetime
 
@@ -118,8 +128,31 @@ class Agent:
         add_message("user", user_message)
         messages = history + [{"role": "user", "content": user_message}]
 
+        # Get tool schemas filtered by tier package and permissions
+        from pathlib import Path as _Path
+        import json as _json
+        try:
+            _cfg  = _json.loads((_Path(__file__).parent.parent / "config" / "settings.json").read_text())
+            _pkg  = _cfg.get("package", "full")
+            _TIER_PACKAGES = {
+                "you":      {"core", "you"},
+                "pro":      {"core", "you", "pro"},
+                "social":   {"core", "you", "pro", "social"},
+                "business": {"core", "you", "pro", "social", "business"},
+                "full":     None,
+            }
+            _allowed = _TIER_PACKAGES.get(_pkg)
+        except Exception:
+            _allowed = None
+        from core.tools import get_all_schemas_for_permissions
+        if permissions is not None:
+            tools = get_all_schemas_for_permissions(permissions, packages=_allowed)
+        else:
+            tools = get_all_schemas(packages=_allowed)
+
         full_response = ""
-        async for chunk in self.llm.stream(messages=messages, system=system):
+        async for chunk in self.llm.stream(messages=messages, system=system,
+                                           tools=tools if tools else None):
             full_response += chunk
             yield chunk
 
