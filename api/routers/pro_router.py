@@ -136,54 +136,7 @@ async def trello_board_cards(board_id: str):
         return {"ok": False, "error": str(e)}
 
 
-# ---------------------------------------------------------------------------
-# Stocks (Yahoo Finance — no key required)
-# ---------------------------------------------------------------------------
-
-@router.get("/api/stocks/quote")
-async def stocks_quote(symbol: str = "AAPL"):
-    try:
-        symbol_upper = symbol.upper()
-        url = (
-            f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol_upper}"
-            "?interval=1d&range=5d"
-        )
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read())
-
-        result = data["chart"]["result"][0]
-        meta = result["meta"]
-        timestamps = result.get("timestamp", [])
-        closes = result["indicators"]["quote"][0].get("close", [])
-
-        current_price: float = meta.get("regularMarketPrice", 0.0)
-        prev_close: float = meta.get("chartPreviousClose", meta.get("previousClose", current_price))
-        change: float = round(current_price - prev_close, 4)
-        change_pct: float = round((change / prev_close * 100) if prev_close else 0.0, 4)
-        name: str = meta.get("shortName", meta.get("longName", symbol_upper))
-        currency: str = meta.get("currency", "USD")
-
-        history = []
-        for ts, close in zip(timestamps, closes):
-            if ts is not None and close is not None:
-                from datetime import datetime, timezone
-                date_str = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d")
-                history.append({"date": date_str, "close": round(float(close), 4)})
-
-        return {
-            "ok": True,
-            "symbol": symbol_upper,
-            "price": round(float(current_price), 4),
-            "change": change,
-            "change_pct": change_pct,
-            "name": name,
-            "currency": currency,
-            "history": history,
-        }
-
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
+# Stocks endpoint moved to api/routers/stocks_router.py
 
 
 # ---------------------------------------------------------------------------
