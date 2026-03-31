@@ -85,17 +85,48 @@ async function loadSidebarPlanBadge() {
       fetch('/api/settings').then(r => r.json()),
       fetch('/api/auth/me').then(r => r.json()),
     ]);
-    const pkg = sr.settings?.package || 'full';
+    const pkg = sr.settings?.package || 'you';
     const role = mr.role || 'admin';
     const plans = { you:'🧑 You', pro:'⚡ Pro', social:'🌐 Social', business:'🏢 Business', full:'✨ Full' };
-    const roles = { admin:'🛡️ Admin', collaborator:'🤝 Collaborator', observer:'👁️ Observer' };
+    const roles = { admin:'🛡️ Admin', collaborator:'🤝 Collaborator', observer:'👁️ Observer', demo:'🚀 Demo' };
     const badge = document.getElementById('sidebar-plan-badge');
     if (!badge) return;
-    document.getElementById('sidebar-plan-icon').textContent = plans[pkg]?.split(' ')[0] || '✨';
+    document.getElementById('sidebar-plan-icon').textContent = plans[pkg]?.split(' ')[0] || '🧑';
     document.getElementById('sidebar-plan-name').textContent = (plans[pkg] || pkg).split(' ').slice(1).join(' ') || pkg;
     document.getElementById('sidebar-role-name').textContent = (roles[role] || role).split(' ').slice(1).join(' ') || role;
     badge.style.display = 'block';
+
+    // Demo banner — sorgu sayacı
+    if (mr.is_demo) {
+      _showDemoBanner(mr.query_count || 0, mr.query_limit || 10, mr.demo_name || '');
+    }
   } catch {}
+}
+
+// ── Demo sorgu sayacı banner ───────────────────────────────────
+function _showDemoBanner(used, limit, name) {
+  if (document.getElementById('demo-banner')) return; // already shown
+  const left = Math.max(0, limit - used);
+  const pct  = Math.min(100, Math.round((used / limit) * 100));
+  const bar  = document.createElement('div');
+  bar.id = 'demo-banner';
+  bar.style.cssText = `
+    position:fixed;bottom:0;left:0;right:0;z-index:1000;
+    background:#0e1118;border-top:1px solid #1e2130;
+    padding:8px 16px;display:flex;align-items:center;gap:12px;
+    font-size:12px;color:#5a6380;
+  `;
+  bar.innerHTML = `
+    <span>🚀 Demo${name ? ' · ' + name : ''}</span>
+    <div style="flex:1;background:#1e2130;border-radius:999px;height:6px;overflow:hidden">
+      <div style="width:${pct}%;height:100%;background:${left===0?'#f43f5e':'#4f8ef7'};border-radius:999px;transition:width .3s"></div>
+    </div>
+    <span style="color:${left===0?'#f43f5e':'#4f8ef7'};font-weight:600">${left} / ${limit} sorgu kaldı</span>
+    ${left === 0 ? '<span style="color:#f43f5e">· Limite ulaşıldı</span>' : ''}
+  `;
+  document.body.appendChild(bar);
+  // Keep bottom padding so chat doesn't hide behind banner
+  document.body.style.paddingBottom = '40px';
 }
 
 // ── Inactivity auto-logout (remote access only) ───────────────

@@ -2,9 +2,10 @@
 # Copyright (c) 2026 Cabir Pekdemir. All rights reserved.
 # Licensed under the Elastic License 2.0 — see LICENSE for details.
 
-"""OZY2 — Authentication (PIN + Session)"""
+"""OZY2 — Authentication (PIN + Session + Demo mode)"""
 import hashlib
 import json
+import re
 import secrets
 import sqlite3
 import time
@@ -14,6 +15,46 @@ from pathlib import Path
 from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel
+
+# ── Demo Mode Config ──────────────────────────────────────────────────────────
+DEMO_PASSWORD    = "ozy2"          # fixed password for demo
+DEMO_QUERY_LIMIT = 10              # max AI queries per demo session
+_ACCESS_LOG_DB   = Path(__file__).parent.parent.parent / "data" / "access_log.db"
+
+
+def _log_db():
+    """Get (and init) access log connection."""
+    _ACCESS_LOG_DB.parent.mkdir(parents=True, exist_ok=True)
+    con = sqlite3.connect(str(_ACCESS_LOG_DB))
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS access_log (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            ts         REAL    NOT NULL,
+            ip         TEXT    NOT NULL,
+            action     TEXT    NOT NULL,
+            first_name TEXT,
+            last_name  TEXT,
+            email      TEXT,
+            session    TEXT,
+            detail     TEXT
+        )
+    """)
+    con.commit()
+    return con
+
+
+def log_access(ip: str, action: str, first_name: str = "", last_name: str = "",
+               email: str = "", session: str = "", detail: str = ""):
+    try:
+        with _log_db() as con:
+            con.execute(
+                "INSERT INTO access_log (ts,ip,action,first_name,last_name,email,session,detail) "
+                "VALUES (?,?,?,?,?,?,?,?)",
+                (time.time(), ip, action, first_name, last_name, email, session, detail),
+            )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"[access_log] write failed: {e}")
 
 # ── Rate Limiting ─────────────────────────────────────────────────────────────
 _RATE_LIMIT   = 10          # max failed attempts
@@ -128,16 +169,43 @@ def _hash(pin: str) -> str:
     return hashlib.sha256(pin.strip().encode()).hexdigest()
 
 
-def _create_session(role_id: str = "admin", permissions: list = None) -> str:
+def _create_session(role_id: str = "admin", permissions: list = None,
+                    demo_info: dict = None) -> str:
     token = secrets.token_urlsafe(32)
     data = {
-        "expiry": time.time() + SESSION_TTL,
-        "role_id": role_id,
+        "expiry":      time.time() + SESSION_TTL,
+        "role_id":     role_id,
         "permissions": permissions if permissions is not None else ["*"],
+        "query_count": 0,
+        "demo_info":   demo_info or {},   # {first_name, last_name, email}
     }
     _sessions[token] = data
     _persist_session(token, data)
     return token
+
+
+def get_query_count(token: str) -> int:
+    data = _sessions.get(token)
+    return data.get("query_count", 0) if data else 0
+
+
+def is_demo_session(token: str) -> bool:
+    data = _sessions.get(token)
+    return bool(data and data.get("demo_info"))
+
+
+def increment_query_count(token: str) -> int:
+    """Increment and return the new query count. Returns -1 if session invalid."""
+    data = _sessions.get(token)
+    if not data:
+        return -1
+    data["query_count"] = data.get("query_count", 0) + 1
+    return data["query_count"]
+
+
+def get_demo_info(token: str) -> dict:
+    data = _sessions.get(token)
+    return data.get("demo_info", {}) if data else {}
 
 
 def is_valid_session(token: str | None) -> bool:
@@ -202,6 +270,13 @@ class ChangePinRequest(BaseModel):
     new_pin: str
 
 
+class DemoLoginRequest(BaseModel):
+    first_name: str
+    last_name:  str
+    email:      str
+    password:   str
+
+
 @router.post("/login")
 async def login(req: PinRequest, request: Request, response: Response):
     ip = _get_ip(request)
@@ -229,6 +304,7 @@ async def login(req: PinRequest, request: Request, response: Response):
         _clear_failures(ip)
         token = _create_session("admin", ["*"])
         response.set_cookie(COOKIE, token, max_age=SESSION_TTL, httponly=True, samesite="lax", secure=False)
+        log_access(ip, "LOGIN_PIN_OK", session=token[:12])
         return {"ok": True, "role": "admin"}
 
     # Check role PINs
@@ -238,14 +314,84 @@ async def login(req: PinRequest, request: Request, response: Response):
             _clear_failures(ip)
             token = _create_session(role["id"], role.get("permissions", []))
             response.set_cookie(COOKIE, token, max_age=SESSION_TTL, httponly=True, samesite="lax", secure=False)
+            log_access(ip, "LOGIN_ROLE_OK", session=token[:12], detail=role["id"])
             return {"ok": True, "role": role["id"]}
 
     _record_failure(ip)
+    log_access(ip, "LOGIN_FAILED")
     attempts_left = max(0, _RATE_LIMIT - len(_failed_attempts[ip]))
     return JSONResponse(
         {"ok": False, "error": "Wrong PIN", "attempts_left": attempts_left},
         status_code=401,
     )
+
+
+@router.post("/demo_login")
+async def demo_login(req: DemoLoginRequest, request: Request, response: Response):
+    """Demo mode login — collects name/email, password is fixed 'ozy2'."""
+    ip = _get_ip(request)
+
+    # Rate limit check
+    if _is_locked(ip):
+        return JSONResponse(
+            {"ok": False, "error": "Çok fazla deneme. 15 dakika sonra tekrar deneyin."},
+            status_code=429,
+        )
+
+    # Basic validation
+    first = req.first_name.strip()[:50]
+    last  = req.last_name.strip()[:50]
+    email = req.email.strip().lower()[:100]
+
+    if not first or not last:
+        return JSONResponse({"ok": False, "error": "Ad ve soyad zorunludur."}, status_code=400)
+    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        return JSONResponse({"ok": False, "error": "Geçerli bir e-posta giriniz."}, status_code=400)
+    if req.password != DEMO_PASSWORD:
+        _record_failure(ip)
+        log_access(ip, "DEMO_LOGIN_FAILED", first_name=first, last_name=last, email=email)
+        return JSONResponse({"ok": False, "error": "Şifre hatalı."}, status_code=401)
+
+    # Create demo session (viewer permissions, no admin actions)
+    _clear_failures(ip)
+    demo_info = {"first_name": first, "last_name": last, "email": email}
+    token = _create_session("demo", ["chat", "memory:read", "tasks:read"], demo_info=demo_info)
+    response.set_cookie(COOKIE, token, max_age=SESSION_TTL, httponly=True, samesite="lax", secure=False)
+
+    log_access(ip, "DEMO_LOGIN_OK",
+               first_name=first, last_name=last, email=email,
+               session=token[:12])
+
+    return {
+        "ok":          True,
+        "role":        "demo",
+        "first_name":  first,
+        "query_limit": DEMO_QUERY_LIMIT,
+    }
+
+
+@router.get("/log")
+async def get_access_log(request: Request, limit: int = 100):
+    """Admin endpoint — returns recent access log entries."""
+    token = request.cookies.get(COOKIE)
+    if get_session_role(token) not in ("admin",):
+        return JSONResponse({"ok": False, "error": "Admin only"}, status_code=403)
+    try:
+        with _log_db() as con:
+            rows = con.execute(
+                "SELECT id,ts,ip,action,first_name,last_name,email,session,detail "
+                "FROM access_log ORDER BY ts DESC LIMIT ?",
+                (min(limit, 500),),
+            ).fetchall()
+        entries = [
+            {"id": r[0], "time": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(r[1])),
+             "ip": r[2], "action": r[3], "first_name": r[4], "last_name": r[5],
+             "email": r[6], "session": r[7], "detail": r[8]}
+            for r in rows
+        ]
+        return {"ok": True, "count": len(entries), "entries": entries}
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
 
 
 @router.post("/logout")
@@ -294,9 +440,16 @@ async def me(request: Request):
     token = request.cookies.get(COOKIE)
     if not is_valid_session(token) and pin_required():
         return {"ok": False, "authenticated": False}
-    return {
+    resp: dict = {
         "ok": True,
         "authenticated": True,
         "role": get_session_role(token),
         "permissions": get_session_permissions(token),
     }
+    if is_demo_session(token):
+        info = get_demo_info(token)
+        resp["is_demo"]    = True
+        resp["demo_name"]  = f"{info.get('first_name','')} {info.get('last_name','')}".strip()
+        resp["query_count"] = get_query_count(token)
+        resp["query_limit"] = DEMO_QUERY_LIMIT
+    return resp

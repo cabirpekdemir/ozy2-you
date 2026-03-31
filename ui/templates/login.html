@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>OZY2 — Login</title>
+  <title>OZY2 — Giriş</title>
   <link rel="icon" type="image/png" href="/static/icons/favicon.png">
-  <link rel="shortcut icon" type="image/png" href="/static/icons/favicon.png">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -32,9 +31,9 @@
       background: #0e1118;
       border: 1px solid #1e2130;
       border-radius: 24px;
-      padding: 48px 40px;
+      padding: 44px 40px 36px;
       width: 100%;
-      max-width: 380px;
+      max-width: 400px;
       text-align: center;
       box-shadow: 0 24px 80px rgba(0,0,0,.5);
       position: relative;
@@ -60,9 +59,121 @@
     .subtitle {
       font-size: 13px;
       color: #5a6380;
-      margin-bottom: 36px;
+      margin-bottom: 8px;
     }
 
+    /* ── Mode tabs ── */
+    .mode-tabs {
+      display: flex;
+      gap: 6px;
+      background: #13161f;
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 28px;
+    }
+    .mode-tab {
+      flex: 1;
+      padding: 7px 0;
+      border: none;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      color: #5a6380;
+      background: transparent;
+      transition: all .15s;
+    }
+    .mode-tab.active {
+      background: #1e2740;
+      color: #4f8ef7;
+    }
+
+    /* ── Form inputs ── */
+    .form-group {
+      text-align: left;
+      margin-bottom: 14px;
+    }
+    .form-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #5a6380;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%;
+      background: #13161f;
+      border: 1px solid #1e2130;
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-size: 14px;
+      color: #e8eaf2;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .form-input:focus {
+      border-color: #4f8ef7;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* Password hint */
+    .pw-hint {
+      font-size: 11px;
+      color: #3a4060;
+      margin-top: 4px;
+      text-align: left;
+    }
+
+    /* Submit button */
+    .submit-btn {
+      width: 100%;
+      padding: 13px;
+      background: #4f8ef7;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: opacity .15s, transform .1s;
+    }
+    .submit-btn:hover   { opacity: .9; }
+    .submit-btn:active  { transform: scale(.98); }
+    .submit-btn:disabled { opacity: .5; cursor: default; }
+
+    /* Error / info */
+    .msg {
+      font-size: 13px;
+      min-height: 20px;
+      margin-top: 12px;
+      transition: opacity .2s;
+    }
+    .msg.error { color: #f43f5e; }
+    .msg.info  { color: #4f8ef7; }
+    .msg.ok    { color: #22c55e; }
+
+    /* Limit badge */
+    .limit-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #1e2740;
+      border: 1px solid #2a3555;
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: #4f8ef7;
+      margin-bottom: 20px;
+    }
+
+    /* PIN section */
     .pin-label {
       font-size: 12px;
       color: #5a6380;
@@ -70,17 +181,14 @@
       letter-spacing: 1px;
       margin-bottom: 16px;
     }
-
     .pin-dots {
       display: flex;
       justify-content: center;
       gap: 14px;
       margin-bottom: 28px;
     }
-
     .pin-dot {
-      width: 18px;
-      height: 18px;
+      width: 18px; height: 18px;
       border-radius: 50%;
       border: 2px solid #2a2f45;
       background: transparent;
@@ -91,14 +199,12 @@
       border-color: #4f8ef7;
       transform: scale(1.15);
     }
-
     .pin-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
       margin-bottom: 16px;
     }
-
     .pin-key {
       background: #13161f;
       border: 1px solid #1e2130;
@@ -110,105 +216,197 @@
       cursor: pointer;
       user-select: none;
       transition: background .1s, transform .08s;
-      -webkit-tap-highlight-color: transparent;
     }
     .pin-key:hover  { background: #1a1f2e; }
     .pin-key:active { background: #4f8ef722; transform: scale(.94); }
+    .pin-key.delete { font-size: 16px; color: #5a6380; }
+    .pin-key.empty  { visibility: hidden; pointer-events: none; }
 
-    .pin-key.delete {
-      font-size: 16px;
-      color: #5a6380;
-    }
-    .pin-key.empty {
-      visibility: hidden;
-      pointer-events: none;
-    }
-
-    .error-msg {
-      font-size: 13px;
-      color: #f43f5e;
-      min-height: 20px;
-      margin-bottom: 4px;
-      transition: opacity .2s;
-    }
-
-    .shake {
-      animation: shake .35s ease;
-    }
+    .shake { animation: shake .35s ease; }
     @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25%  { transform: translateX(-8px); }
-      75%  { transform: translateX(8px); }
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
     }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid #ffffff44;
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
 <div class="login-box" id="login-box">
   <div class="logo-wrap">
-    <img src="/static/icons/logo.png" alt="OZY2">
+    <img src="/static/icons/logo.png" alt="OZY2" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=font-size:32px>🤖</span>'">
   </div>
-  <div class="subtitle">Personal AI Assistant</div>
+  <p class="subtitle">Personal AI Assistant</p>
 
-  <div class="pin-label">Enter PIN</div>
-
-  <div class="pin-dots" id="pin-dots">
-    <div class="pin-dot" id="d0"></div>
-    <div class="pin-dot" id="d1"></div>
-    <div class="pin-dot" id="d2"></div>
-    <div class="pin-dot" id="d3"></div>
-    <div class="pin-dot" id="d4"></div>
-    <div class="pin-dot" id="d5"></div>
+  <!-- Mode selector -->
+  <div class="mode-tabs" id="mode-tabs">
+    <button class="mode-tab active" id="tab-demo" onclick="setMode('demo')">🚀 Demo</button>
+    <button class="mode-tab" id="tab-pin"  onclick="setMode('pin')">🔒 PIN</button>
   </div>
 
-  <div class="pin-grid">
-    <button class="pin-key" onclick="press(1)">1</button>
-    <button class="pin-key" onclick="press(2)">2</button>
-    <button class="pin-key" onclick="press(3)">3</button>
-    <button class="pin-key" onclick="press(4)">4</button>
-    <button class="pin-key" onclick="press(5)">5</button>
-    <button class="pin-key" onclick="press(6)">6</button>
-    <button class="pin-key" onclick="press(7)">7</button>
-    <button class="pin-key" onclick="press(8)">8</button>
-    <button class="pin-key" onclick="press(9)">9</button>
-    <button class="pin-key empty"></button>
-    <button class="pin-key" onclick="press(0)">0</button>
-    <button class="pin-key delete" onclick="del()">⌫</button>
+  <!-- ── DEMO FORM ── -->
+  <div id="demo-section">
+    <div class="limit-badge">
+      🎯 Demo &nbsp;·&nbsp; 10 ücretsiz sorgu
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Ad</label>
+        <input class="form-input" id="first_name" type="text" placeholder="Ahmet" autocomplete="given-name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Soyad</label>
+        <input class="form-input" id="last_name" type="text" placeholder="Yılmaz" autocomplete="family-name">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">E-posta</label>
+      <input class="form-input" id="email" type="email" placeholder="ornek@email.com" autocomplete="email">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Şifre</label>
+      <input class="form-input" id="demo_pw" type="password" placeholder="••••"
+             oninput="clearMsg()" onkeydown="if(event.key==='Enter') demoLogin()">
+      <div class="pw-hint">Demo şifresi: <strong>ozy2</strong></div>
+    </div>
+
+    <button class="submit-btn" id="demo-btn" onclick="demoLogin()">Demoyu Başlat →</button>
   </div>
 
-  <div class="error-msg" id="error-msg"></div>
+  <!-- ── PIN FORM ── -->
+  <div id="pin-section" style="display:none">
+    <div class="pin-label">PIN Girin</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+      <div class="pin-dot" id="d4"></div>
+      <div class="pin-dot" id="d5"></div>
+    </div>
+    <div class="pin-grid">
+      <button class="pin-key" onclick="press(1)">1</button>
+      <button class="pin-key" onclick="press(2)">2</button>
+      <button class="pin-key" onclick="press(3)">3</button>
+      <button class="pin-key" onclick="press(4)">4</button>
+      <button class="pin-key" onclick="press(5)">5</button>
+      <button class="pin-key" onclick="press(6)">6</button>
+      <button class="pin-key" onclick="press(7)">7</button>
+      <button class="pin-key" onclick="press(8)">8</button>
+      <button class="pin-key" onclick="press(9)">9</button>
+      <button class="pin-key empty"></button>
+      <button class="pin-key" onclick="press(0)">0</button>
+      <button class="pin-key delete" onclick="del()">⌫</button>
+    </div>
+  </div>
+
+  <div class="msg" id="msg"></div>
 </div>
 
 <script>
+  // ── Mode switching ─────────────────────────────────────────────────────────
+  function setMode(mode) {
+    document.getElementById('demo-section').style.display = mode === 'demo' ? '' : 'none';
+    document.getElementById('pin-section').style.display  = mode === 'pin'  ? '' : 'none';
+    document.getElementById('tab-demo').classList.toggle('active', mode === 'demo');
+    document.getElementById('tab-pin').classList.toggle('active',  mode === 'pin');
+    clearMsg();
+  }
+
+  function clearMsg() {
+    const m = document.getElementById('msg');
+    m.textContent = '';
+    m.className = 'msg';
+  }
+
+  function showMsg(text, type = 'error') {
+    const m = document.getElementById('msg');
+    m.textContent = text;
+    m.className = 'msg ' + type;
+  }
+
+  // ── Demo login ─────────────────────────────────────────────────────────────
+  async function demoLogin() {
+    const first    = document.getElementById('first_name').value.trim();
+    const last     = document.getElementById('last_name').value.trim();
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('demo_pw').value;
+
+    if (!first || !last) { showMsg('Ad ve soyad zorunludur.'); return; }
+    if (!email.includes('@')) { showMsg('Geçerli bir e-posta giriniz.'); return; }
+    if (!password) { showMsg('Şifre boş bırakılamaz.'); return; }
+
+    const btn = document.getElementById('demo-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Giriş yapılıyor…';
+
+    try {
+      const r = await fetch('/api/auth/demo_login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ first_name: first, last_name: last, email, password }),
+      });
+      const d = await r.json();
+      if (d.ok) {
+        showMsg(`Hoş geldiniz, ${d.first_name}! Yükleniyor…`, 'ok');
+        setTimeout(() => window.location.replace('/'), 600);
+      } else {
+        showMsg(d.error || 'Giriş başarısız.');
+        document.getElementById('login-box').classList.add('shake');
+        setTimeout(() => document.getElementById('login-box').classList.remove('shake'), 400);
+        btn.disabled = false;
+        btn.textContent = 'Demoyu Başlat →';
+      }
+    } catch {
+      showMsg('Bağlantı hatası. Lütfen tekrar deneyin.');
+      btn.disabled = false;
+      btn.textContent = 'Demoyu Başlat →';
+    }
+  }
+
+  // ── PIN login ──────────────────────────────────────────────────────────────
   let pin = '';
   const MAX = 6;
 
   function updateDots() {
-    for (let i = 0; i < MAX; i++) {
-      document.getElementById('d' + i)
-        ?.classList.toggle('filled', i < pin.length);
-    }
+    for (let i = 0; i < MAX; i++)
+      document.getElementById('d' + i)?.classList.toggle('filled', i < pin.length);
   }
 
   function press(n) {
     if (pin.length >= MAX) return;
     pin += String(n);
     updateDots();
-    document.getElementById('error-msg').textContent = '';
+    clearMsg();
     if (pin.length >= 4) {
-      // Auto-submit after 4+ digits with short delay
-      clearTimeout(window._autoSubmit);
-      window._autoSubmit = setTimeout(tryLogin, pin.length === MAX ? 0 : 600);
+      clearTimeout(window._auto);
+      window._auto = setTimeout(pinLogin, pin.length === MAX ? 0 : 600);
     }
   }
 
   function del() {
-    clearTimeout(window._autoSubmit);
+    clearTimeout(window._auto);
     pin = pin.slice(0, -1);
     updateDots();
   }
 
-  async function tryLogin() {
+  async function pinLogin() {
     if (pin.length < 4) return;
     try {
       const r = await fetch('/api/auth/login', {
@@ -220,22 +418,24 @@
       if (d.ok) {
         window.location.replace('/');
       } else {
-        document.getElementById('error-msg').textContent = 'Wrong PIN. Try again.';
+        showMsg(d.error || 'Yanlış PIN. Tekrar deneyin.');
         document.getElementById('login-box').classList.add('shake');
         setTimeout(() => document.getElementById('login-box').classList.remove('shake'), 400);
         pin = '';
         updateDots();
       }
     } catch {
-      document.getElementById('error-msg').textContent = 'Connection error.';
+      showMsg('Bağlantı hatası.');
     }
   }
 
-  // Keyboard support
+  // Keyboard: PIN mode
   document.addEventListener('keydown', e => {
+    const pinVisible = document.getElementById('pin-section').style.display !== 'none';
+    if (!pinVisible) return;
     if (e.key >= '0' && e.key <= '9') press(parseInt(e.key));
     if (e.key === 'Backspace') del();
-    if (e.key === 'Enter' && pin.length >= 4) { clearTimeout(window._autoSubmit); tryLogin(); }
+    if (e.key === 'Enter' && pin.length >= 4) { clearTimeout(window._auto); pinLogin(); }
   });
 </script>
 </body>

@@ -72,8 +72,14 @@ def _mask(cfg: dict) -> dict:
 
 
 @router.get("/api/settings")
-async def get_settings():
-    return {"ok": True, "settings": _mask(read_cfg())}
+async def get_settings(request: Request):
+    from api.routers.auth_router import is_demo_session, COOKIE
+    cfg = _mask(read_cfg())
+    # Demo users always see "you" package — they don't have full access
+    token = request.cookies.get(COOKIE)
+    if is_demo_session(token):
+        cfg["package"] = "you"
+    return {"ok": True, "settings": cfg}
 
 
 @router.post("/api/settings")
