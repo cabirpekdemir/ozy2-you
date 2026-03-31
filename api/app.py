@@ -172,10 +172,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline'; "
+            "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: https:; "
-            "connect-src 'self'; "
+            "connect-src 'self' https://cloudflareinsights.com; "
             "frame-ancestors 'none';"
         )
         response.headers["X-Content-Type-Options"]  = "nosniff"
