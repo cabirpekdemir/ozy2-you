@@ -17,7 +17,7 @@ async function init_roles(el) {
   try {
     const r = await fetch('/api/auth/me');
     const d = await r.json();
-    const isAdmin = d.ok && (d.user?.role === 'admin' || d.user?.level >= 100 || d.is_admin);
+    const isAdmin = d.ok && d.role === 'admin';
     if (isAdmin) {
       rolesLoad();
     } else {
