@@ -96,9 +96,10 @@ async function loadSidebarPlanBadge() {
     document.getElementById('sidebar-role-name').textContent = (roles[role] || role).split(' ').slice(1).join(' ') || role;
     badge.style.display = 'block';
 
-    // Demo banner — sorgu sayacı
+    // Demo banner — sorgu sayacı + nav filtreleme
     if (mr.is_demo) {
       _showDemoBanner(mr.query_count || 0, mr.query_limit || 10, mr.demo_name || '');
+      _filterNavForDemo();
     }
   } catch {}
 }
@@ -127,6 +128,18 @@ function _showDemoBanner(used, limit, name) {
   document.body.appendChild(bar);
   // Keep bottom padding so chat doesn't hide behind banner
   document.body.style.paddingBottom = '40px';
+}
+
+// ── Demo: sidebar nav filtreleme ──────────────────────────────
+// Demo kullanıcılara sadece data-tier="you" itemlar gösterilir.
+// Gmail/Calendar/Telegram/Premium itemlar gizlenir.
+function _filterNavForDemo() {
+  const DEMO_TIERS = new Set(['you']);
+  document.querySelectorAll('[data-tier]').forEach(el => {
+    if (!DEMO_TIERS.has(el.dataset.tier)) {
+      el.style.display = 'none';
+    }
+  });
 }
 
 // ── Inactivity auto-logout (remote access only) ───────────────
