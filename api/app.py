@@ -37,6 +37,8 @@ TEMPLATES = ROOT / "ui" / "templates"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("[OZY2] Starting up...")
+    from api.routers.auth_router import load_sessions_from_db
+    load_sessions_from_db()
     register_all()   # register all skill tools
     get_agent()
     scheduler.start()

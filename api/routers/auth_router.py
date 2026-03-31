@@ -6,6 +6,7 @@
 import hashlib
 import json
 import secrets
+import sqlite3
 import time
 from pathlib import Path
 
@@ -19,6 +20,62 @@ SESSION_TTL = 86400 * 7   # 7 days
 
 _sessions: dict[str, dict] = {}
 # {token: {"expiry": float, "role_id": str, "permissions": list[str]}}
+
+_SESSION_DB = Path(__file__).parent.parent.parent / "data" / "sessions.db"
+
+
+# ── Session persistence (SQLite) ──────────────────────────────────────────────
+
+def _db():
+    _SESSION_DB.parent.mkdir(parents=True, exist_ok=True)
+    con = sqlite3.connect(str(_SESSION_DB))
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS sessions (
+            token       TEXT PRIMARY KEY,
+            expiry      REAL NOT NULL,
+            role_id     TEXT NOT NULL,
+            permissions TEXT NOT NULL
+        )
+    """)
+    con.commit()
+    return con
+
+
+def _persist_session(token: str, data: dict):
+    try:
+        with _db() as con:
+            con.execute(
+                "INSERT OR REPLACE INTO sessions (token, expiry, role_id, permissions) VALUES (?,?,?,?)",
+                (token, data["expiry"], data["role_id"], json.dumps(data["permissions"])),
+            )
+    except Exception:
+        pass
+
+
+def _delete_session_db(token: str):
+    try:
+        with _db() as con:
+            con.execute("DELETE FROM sessions WHERE token=?", (token,))
+    except Exception:
+        pass
+
+
+def load_sessions_from_db():
+    """Load valid sessions from disk into memory on startup."""
+    global _sessions
+    try:
+        now = time.time()
+        with _db() as con:
+            con.execute("DELETE FROM sessions WHERE expiry <= ?", (now,))
+            rows = con.execute("SELECT token, expiry, role_id, permissions FROM sessions").fetchall()
+        for token, expiry, role_id, permissions in rows:
+            _sessions[token] = {
+                "expiry": expiry,
+                "role_id": role_id,
+                "permissions": json.loads(permissions),
+            }
+    except Exception:
+        pass
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -36,11 +93,13 @@ def _hash(pin: str) -> str:
 
 def _create_session(role_id: str = "admin", permissions: list = None) -> str:
     token = secrets.token_urlsafe(32)
-    _sessions[token] = {
+    data = {
         "expiry": time.time() + SESSION_TTL,
         "role_id": role_id,
         "permissions": permissions if permissions is not None else ["*"],
     }
+    _sessions[token] = data
+    _persist_session(token, data)
     return token
 
 
@@ -52,6 +111,7 @@ def is_valid_session(token: str | None) -> bool:
         return False
     if time.time() > data["expiry"]:
         _sessions.pop(token, None)
+        _delete_session_db(token)
         return False
     return True
 
@@ -138,6 +198,7 @@ async def login(req: PinRequest, response: Response):
 async def logout(response: Response, request: Request):
     token = request.cookies.get(COOKIE)
     _sessions.pop(token, None)
+    _delete_session_db(token)
     response.delete_cookie(COOKIE)
     return {"ok": True}
 
