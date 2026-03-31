@@ -221,14 +221,14 @@ async def login(req: PinRequest, request: Request, response: Response):
     if not stored_admin:
         _clear_failures(ip)
         token = _create_session("admin", ["*"])
-        response.set_cookie(COOKIE, token, max_age=SESSION_TTL, httponly=True, samesite="lax")
+        response.set_cookie(COOKIE, token, max_age=SESSION_TTL, httponly=True, samesite="strict", secure=False)
         return {"ok": True, "role": "admin"}
 
     # Check admin PIN
     if hashed == stored_admin:
         _clear_failures(ip)
         token = _create_session("admin", ["*"])
-        response.set_cookie(COOKIE, token, max_age=SESSION_TTL, httponly=True, samesite="lax")
+        response.set_cookie(COOKIE, token, max_age=SESSION_TTL, httponly=True, samesite="strict", secure=False)
         return {"ok": True, "role": "admin"}
 
     # Check role PINs
@@ -237,7 +237,7 @@ async def login(req: PinRequest, request: Request, response: Response):
         if role_hash and hashed == role_hash:
             _clear_failures(ip)
             token = _create_session(role["id"], role.get("permissions", []))
-            response.set_cookie(COOKIE, token, max_age=SESSION_TTL, httponly=True, samesite="lax")
+            response.set_cookie(COOKIE, token, max_age=SESSION_TTL, httponly=True, samesite="strict", secure=False)
             return {"ok": True, "role": role["id"]}
 
     _record_failure(ip)

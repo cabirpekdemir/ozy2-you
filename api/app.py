@@ -138,29 +138,54 @@ Run `python3 reauth_google.py` once to authorize.
     redoc_url="/redoc",
 )
 
-# ── CORS: allow localhost on configured port ──────────────────────────────────
-def _get_port() -> int:
+# ── CORS: restrict to known origins ──────────────────────────────────────────
+def _get_allowed_origins() -> list[str]:
     try:
         import json
-        cfg = ROOT / "config" / "settings.json"
-        return int(json.loads(cfg.read_text()).get("port", 8082))
+        cfg  = json.loads((ROOT / "config" / "settings.json").read_text())
+        port = int(cfg.get("port", 8082))
+        base = [
+            f"http://localhost:{port}",
+            f"http://127.0.0.1:{port}",
+            f"https://localhost:{port}",
+        ]
+        # Explicit extra origins from settings (e.g. "https://demo.ozy2.com")
+        extra = cfg.get("allowed_origins", [])
+        if isinstance(extra, str):
+            extra = [o.strip() for o in extra.split(",") if o.strip()]
+        return base + extra
     except Exception:
-        return 8082
-
-_PORT = _get_port()
+        return ["http://localhost:8082", "http://127.0.0.1:8082"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        f"http://localhost:{_PORT}",
-        f"http://127.0.0.1:{_PORT}",
-        "*",  # allow Tailscale / LAN when remote_access is on
-    ],
-    allow_credentials=False,
-    allow_methods=["GET", "POST", "DELETE", "PUT"],
+    allow_origins=_get_allowed_origins(),
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "DELETE", "PUT", "PATCH"],
     allow_headers=["Content-Type"],
 )
 
+
+# ── Security Headers Middleware ───────────────────────────────────────────────
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: FastAPIRequest, call_next):
+        response = await call_next(request)
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: https:; "
+            "connect-src 'self'; "
+            "frame-ancestors 'none';"
+        )
+        response.headers["X-Content-Type-Options"]  = "nosniff"
+        response.headers["X-Frame-Options"]         = "DENY"
+        response.headers["Referrer-Policy"]         = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"]      = "geolocation=(), microphone=(), camera=()"
+        return response
+
+# ── Security headers ──────────────────────────────────────────────────────────
+app.add_middleware(SecurityHeadersMiddleware)
 # ── Auth guard ────────────────────────────────────────────────────────────────
 app.add_middleware(AuthMiddleware)
 # ── Localhost-only guard ───────────────────────────────────────────────────────
