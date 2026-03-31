@@ -23,6 +23,7 @@ async function init_marketplace(el) {
         <button class="tab-btn"        id="mk-tab-installed" onclick="mkShowTab('installed')">✅ Installed</button>
         <button class="tab-btn"        id="mk-tab-publish"   onclick="mkShowTab('publish')">🚀 Publish</button>
         <button class="tab-btn"        id="mk-tab-revenue"   onclick="mkShowTab('revenue')">💰 Revenue</button>
+        <button class="tab-btn"        id="mk-tab-docs"      onclick="mkShowTab('docs')">📖 Docs</button>
         <button class="tab-btn"        id="mk-tab-admin"     onclick="mkShowTab('admin')">🛠️ Admin</button>
       </div>
 
@@ -42,6 +43,7 @@ function mkShowTab(tab) {
   if (tab === 'installed') mkLoadInstalled();
   if (tab === 'publish')   mkRenderPublish();
   if (tab === 'revenue')   mkLoadRevenue();
+  if (tab === 'docs')      mkRenderDocs();
   if (tab === 'admin')     mkLoadAdmin();
 }
 
@@ -487,4 +489,279 @@ async function mkReject(id, name) {
   await fetch(`/api/marketplace/skills/${id}/reject`, { method: 'POST' });
   toast(`'${name}' rejected`, 'info');
   mkLoadAdmin();
+}
+
+// ── Developer Docs ────────────────────────────────────────────────────────────
+
+function mkRenderDocs() {
+  const el = document.getElementById('mk-content');
+  el.innerHTML = `
+    <div style="max-width:720px;line-height:1.75;font-size:14px">
+
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:14px;padding:28px 32px;margin-bottom:28px;color:#fff">
+        <div style="font-size:26px;font-weight:700;margin-bottom:6px">OZY2 Skill Developer Guide</div>
+        <div style="opacity:.85;font-size:14px">Build and publish AI-powered skills for the OZY2 ecosystem.<br>
+          Earn 85% of every sale — 15% platform commission.</div>
+      </div>
+
+      <!-- TOC -->
+      <div class="card" style="padding:18px 24px;margin-bottom:24px">
+        <div style="font-weight:600;margin-bottom:10px;font-size:13px;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em">Contents</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:13px">
+          ${[
+            ['#what','What is a Skill?'],['#quickstart','Quick Start'],
+            ['#register','@register Decorator'],['#params','Parameter Types'],
+            ['#tiers','Package Tiers'],['#permissions','Permissions'],
+            ['#manifest','Skill Manifest'],['#test','Testing Locally'],
+            ['#publish','Publishing'],['#revenue','Revenue & Payouts'],
+            ['#categories','Categories'],['#best','Best Practices'],
+          ].map(([h,t]) => `<a href="${h}" style="color:var(--accent);text-decoration:none">→ ${t}</a>`).join('')}
+        </div>
+      </div>
+
+      ${mkDoc('what','🤔 What is a Skill?',`
+        <p>A <strong>Skill</strong> is an async Python function registered with the OZY2 tool registry.
+        When a user asks the AI assistant something, OZY2 automatically calls the right skill and
+        returns a structured result.</p>
+        <p>Skills can do anything: call external APIs, read files, query databases, send messages,
+        run calculations — the AI handles when and how to use them.</p>
+      `)}
+
+      ${mkDoc('quickstart','⚡ Quick Start',`
+        <p>Minimum viable skill — one file, one function:</p>
+        <pre style="${mkPre()}"><code><span style="color:#94a3b8"># my_skill.py</span>
+<span style="color:#7dd3fc">from</span> core.tools <span style="color:#7dd3fc">import</span> register
+
+<span style="color:#7dd3fc">def</span> <span style="color:#fde68a">register_all</span>():
+
+    <span style="color:#a5b4fc">@register</span>(
+        name=<span style="color:#86efac">"hello_world"</span>,
+        description=<span style="color:#86efac">"Greet a person by name."</span>,
+        params={
+            <span style="color:#86efac">"name"</span>: {<span style="color:#86efac">"type"</span>: <span style="color:#86efac">"string"</span>, <span style="color:#86efac">"description"</span>: <span style="color:#86efac">"Person's name"</span>, <span style="color:#86efac">"required"</span>: <span style="color:#fca5a5">True</span>},
+        },
+        package=<span style="color:#86efac">"you"</span>,
+    )
+    <span style="color:#7dd3fc">async def</span> <span style="color:#fde68a">_hello</span>(name: str):
+        <span style="color:#7dd3fc">return</span> {<span style="color:#86efac">"message"</span>: <span style="color:#86efac">f"Hello, {name}! 👋"</span>}</code></pre>
+        <p>That's it. OZY2's AI will automatically call this when someone says <em>"greet John"</em>.</p>
+      `)}
+
+      ${mkDoc('register','🎯 @register Decorator',`
+        <p>Every skill uses the <code style="${mkCode()}">@register</code> decorator from <code style="${mkCode()}">core.tools</code>:</p>
+        <pre style="${mkPre()}"><code><span style="color:#a5b4fc">@register</span>(
+    name=<span style="color:#86efac">"tool_name"</span>,          <span style="color:#94a3b8"># unique snake_case identifier</span>
+    description=<span style="color:#86efac">"..."</span>,       <span style="color:#94a3b8"># shown to AI — be specific</span>
+    params={...},             <span style="color:#94a3b8"># input parameters (see below)</span>
+    package=<span style="color:#86efac">"you"</span>,           <span style="color:#94a3b8"># tier: you | pro | social | business</span>
+    permission=<span style="color:#86efac">"scope.read"</span>,  <span style="color:#94a3b8"># optional permission scope</span>
+)</code></pre>
+        <div style="background:var(--bg2);border-radius:8px;padding:12px 16px;margin-top:12px;font-size:13px">
+          <strong>💡 Description tip:</strong> Write it from the AI's perspective. Include trigger phrases:
+          <em>"Use for: 'weather', 'is it raining', 'forecast'"</em>. The better the description,
+          the more accurately the AI calls your skill.
+        </div>
+      `)}
+
+      ${mkDoc('params','📝 Parameter Types',`
+        <p>Parameters are defined as a dict. Each key is a parameter name:</p>
+        <pre style="${mkPre()}"><code>params={
+    <span style="color:#86efac">"city"</span>:    {<span style="color:#86efac">"type"</span>: <span style="color:#86efac">"string"</span>,  <span style="color:#86efac">"description"</span>: <span style="color:#86efac">"City name"</span>},
+    <span style="color:#86efac">"forecast"</span>: {<span style="color:#86efac">"type"</span>: <span style="color:#86efac">"boolean"</span>, <span style="color:#86efac">"description"</span>: <span style="color:#86efac">"True for multi-day"</span>},
+    <span style="color:#86efac">"days"</span>:     {<span style="color:#86efac">"type"</span>: <span style="color:#86efac">"integer"</span>, <span style="color:#86efac">"description"</span>: <span style="color:#86efac">"Days 1–7"</span>},
+    <span style="color:#86efac">"query"</span>:    {<span style="color:#86efac">"type"</span>: <span style="color:#86efac">"string"</span>,  <span style="color:#86efac">"description"</span>: <span style="color:#86efac">"Search query"</span>, <span style="color:#86efac">"required"</span>: <span style="color:#fca5a5">True</span>},
+}</code></pre>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:8px">
+          <thead><tr style="border-bottom:1px solid var(--card-border)">
+            <th style="text-align:left;padding:6px 8px;color:var(--text-3)">Type</th>
+            <th style="text-align:left;padding:6px 8px;color:var(--text-3)">Python</th>
+            <th style="text-align:left;padding:6px 8px;color:var(--text-3)">Example</th>
+          </tr></thead>
+          <tbody>
+            ${[
+              ['string','str','"Istanbul"'],
+              ['integer','int','7'],
+              ['boolean','bool','True / False'],
+              ['number','float','3.14'],
+              ['array','list','["a","b","c"]'],
+              ['object','dict','{"key":"val"}'],
+            ].map(([t,p,e]) => `<tr style="border-bottom:1px solid var(--card-border)">
+              <td style="padding:6px 8px"><code style="${mkCode()}">${t}</code></td>
+              <td style="padding:6px 8px"><code style="${mkCode()}">${p}</code></td>
+              <td style="padding:6px 8px;color:var(--text-3)">${e}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      `)}
+
+      ${mkDoc('tiers','📦 Package Tiers',`
+        <p>Every skill belongs to a tier. Users can only call skills in their tier or below:</p>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="border-bottom:1px solid var(--card-border)">
+            <th style="text-align:left;padding:8px;color:var(--text-3)">Tier</th>
+            <th style="text-align:left;padding:8px;color:var(--text-3)">package=</th>
+            <th style="text-align:left;padding:8px;color:var(--text-3)">Typical use</th>
+          </tr></thead>
+          <tbody>
+            ${[
+              ['⚡ YOU',    'you',      'Weather, web search, notes, reminders, tasks'],
+              ['💼 PRO',    'pro',      'Email, calendar, drive, documents, TTS'],
+              ['🌐 SOCIAL', 'social',   'YouTube, content creation, debate, Instagram'],
+              ['🏢 BUSINESS','business','Slack, Jira, Linear, HubSpot, GA4, invoices'],
+              ['✨ FULL',   'core',     'Available in all tiers'],
+            ].map(([n,p,d]) => `<tr style="border-bottom:1px solid var(--card-border)">
+              <td style="padding:8px;font-weight:600">${n}</td>
+              <td style="padding:8px"><code style="${mkCode()}">${p}</code></td>
+              <td style="padding:8px;color:var(--text-3)">${d}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      `)}
+
+      ${mkDoc('permissions','🔐 Permissions',`
+        <p>Permissions let admins grant specific capabilities to collaborator roles.
+        Use <code style="${mkCode()}">permission="scope.action"</code> on skills that touch
+        sensitive data:</p>
+        <pre style="${mkPre()}"><code><span style="color:#a5b4fc">@register</span>(
+    name=<span style="color:#86efac">"send_slack_message"</span>,
+    description=<span style="color:#86efac">"Send a Slack message."</span>,
+    package=<span style="color:#86efac">"business"</span>,
+    permission=<span style="color:#86efac">"slack.write"</span>,  <span style="color:#94a3b8"># role must have this permission</span>
+)</code></pre>
+        <p>Use <code style="${mkCode()}">permission="*"</code> (default) for unrestricted skills.
+        Built-in scopes: <code style="${mkCode()}">email.read</code>, <code style="${mkCode()}">calendar.write</code>,
+        <code style="${mkCode()}">task.read</code>, <code style="${mkCode()}">slack.write</code>, etc.</p>
+      `)}
+
+      ${mkDoc('manifest','📋 Skill Manifest',`
+        <p>When submitting to the marketplace, include a <code style="${mkCode()}">manifest</code>
+        object describing your skill's requirements:</p>
+        <pre style="${mkPre()}"><code>{
+  <span style="color:#86efac">"tools"</span>: [<span style="color:#86efac">"my_tool_name"</span>],       <span style="color:#94a3b8"># registered tool names</span>
+  <span style="color:#86efac">"settings_keys"</span>: [              <span style="color:#94a3b8"># keys needed in settings.json</span>
+    <span style="color:#86efac">"openweather_api_key"</span>
+  ],
+  <span style="color:#86efac">"external_apis"</span>: [            <span style="color:#94a3b8"># third-party services used</span>
+    <span style="color:#86efac">"api.openweathermap.org"</span>
+  ],
+  <span style="color:#86efac">"min_ozy2_version"</span>: <span style="color:#86efac">"2.0.0"</span>    <span style="color:#94a3b8"># minimum compatible version</span>
+}</code></pre>
+      `)}
+
+      ${mkDoc('test','🧪 Testing Locally',`
+        <p>1. Place your skill file in <code style="${mkCode()}">skills/</code></p>
+        <p>2. Import and call <code style="${mkCode()}">register_all()</code> in
+           <code style="${mkCode()}">skills/tools_register.py</code>:</p>
+        <pre style="${mkPre()}"><code><span style="color:#7dd3fc">from</span> skills.my_skill <span style="color:#7dd3fc">import</span> register_all <span style="color:#7dd3fc">as</span> reg_mine
+reg_mine()</code></pre>
+        <p>3. Start OZY2 and chat: <em>"Test my skill with X"</em></p>
+        <p>4. Check the agent logs for tool calls and responses.</p>
+        <div style="background:var(--bg2);border-radius:8px;padding:12px 16px;margin-top:12px;font-size:13px">
+          <strong>🐛 Debug tip:</strong> All tool calls are logged.
+          Watch the terminal — you'll see <code style="${mkCode()}">[Tools] Registered: my_tool</code>
+          on startup and <code style="${mkCode()}">[Agent] tool_call: my_tool {...}</code> on execution.
+        </div>
+      `)}
+
+      ${mkDoc('publish','🚀 Publishing to Marketplace',`
+        <p>Submit via the <strong>Publish</strong> tab above, or directly via API:</p>
+        <pre style="${mkPre()}"><code>POST /api/marketplace/skills
+
+{
+  <span style="color:#86efac">"name"</span>:             <span style="color:#86efac">"My Awesome Skill"</span>,
+  <span style="color:#86efac">"description"</span>:      <span style="color:#86efac">"One-line summary for the marketplace card"</span>,
+  <span style="color:#86efac">"long_description"</span>: <span style="color:#86efac">"Full details shown on the skill page"</span>,
+  <span style="color:#86efac">"developer_id"</span>:     <span style="color:#86efac">"your-github-username"</span>,
+  <span style="color:#86efac">"developer_name"</span>:   <span style="color:#86efac">"Your Name"</span>,
+  <span style="color:#86efac">"category"</span>:         <span style="color:#86efac">"Productivity"</span>,
+  <span style="color:#86efac">"price"</span>:            <span style="color:#fca5a5">4.99</span>,
+  <span style="color:#86efac">"icon"</span>:             <span style="color:#86efac">"⚡"</span>,
+  <span style="color:#86efac">"tags"</span>:             [<span style="color:#86efac">"automation"</span>, <span style="color:#86efac">"api"</span>],
+  <span style="color:#86efac">"version"</span>:          <span style="color:#86efac">"1.0.0"</span>,
+  <span style="color:#86efac">"manifest"</span>:         { <span style="color:#86efac">"tools"</span>: [<span style="color:#86efac">"my_tool"</span>] }
+}</code></pre>
+        <p>Status flow: <strong>pending</strong> → admin review → <strong>published</strong> or <strong>rejected</strong></p>
+        <p>Rejected skills get feedback — fix and resubmit anytime.</p>
+      `)}
+
+      ${mkDoc('revenue','💰 Revenue & Payouts',`
+        <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:16px">
+          <tr style="background:var(--bg2);border-radius:8px">
+            <td style="padding:16px;text-align:center;border-radius:8px 0 0 8px">
+              <div style="font-size:28px;font-weight:700;color:#10b981">85%</div>
+              <div style="font-size:12px;color:var(--text-3);margin-top:2px">Developer payout</div>
+            </td>
+            <td style="padding:16px;text-align:center">
+              <div style="font-size:28px;font-weight:700;color:var(--accent)">15%</div>
+              <div style="font-size:12px;color:var(--text-3);margin-top:2px">Platform commission</div>
+            </td>
+            <td style="padding:16px;text-align:center;border-radius:0 8px 8px 0">
+              <div style="font-size:28px;font-weight:700">$0</div>
+              <div style="font-size:12px;color:var(--text-3);margin-top:2px">Free skills allowed</div>
+            </td>
+          </tr>
+        </table>
+        <p>Track your earnings in <strong>Revenue → Developer Revenue Lookup</strong> with your developer ID.
+        Payouts are recorded per transaction in the platform database.</p>
+        <p>Price range: <strong>$0 (free)</strong> to any amount. Recommended: $0.99 – $9.99 for single skills,
+        $4.99 – $19.99 for skill bundles.</p>
+      `)}
+
+      ${mkDoc('categories','🗂️ Categories',`
+        <p>Choose the most specific category for discoverability:</p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
+          ${['Productivity','Communication','Finance','Analytics','Developer Tools',
+             'AI & ML','Smart Home','Social Media','Education','Utilities',
+             'Health','Entertainment','E-commerce','Marketing'].map(c =>
+            `<span style="background:var(--bg2);border:1px solid var(--card-border);
+              border-radius:20px;padding:4px 12px;font-size:12px">${c}</span>`
+          ).join('')}
+        </div>
+      `)}
+
+      ${mkDoc('best','✅ Best Practices',`
+        <ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px">
+          <li><strong>Always return a dict.</strong> Include <code style="${mkCode()}">"ok": True</code>
+              on success, <code style="${mkCode()}">"error": "message"</code> on failure.</li>
+          <li><strong>Use stdlib only</strong> for network calls (<code style="${mkCode()}">urllib.request</code>).
+              Don't add pip dependencies unless absolutely necessary.</li>
+          <li><strong>Read config from settings.json</strong> — never hardcode API keys.
+              Use <code style="${mkCode()}">cfg.get("my_api_key")</code> and return a helpful error if missing.</li>
+          <li><strong>Set a timeout</strong> on all HTTP calls:
+              <code style="${mkCode()}">urlopen(req, timeout=10)</code></li>
+          <li><strong>Be async.</strong> Always use <code style="${mkCode()}">async def</code> — OZY2's
+              agent engine is fully async.</li>
+          <li><strong>Write a clear description.</strong> The AI uses it to decide when to call your skill.
+              Include example trigger phrases.</li>
+          <li><strong>One skill = one responsibility.</strong> Prefer two focused skills over one
+              that does too much.</li>
+        </ul>
+      `)}
+
+      <!-- Footer -->
+      <div style="text-align:center;padding:32px 0 16px;color:var(--text-3);font-size:13px">
+        OZY2 Skill Marketplace · <a href="https://github.com/cabirpekdemir/ozy2"
+          target="_blank" style="color:var(--accent);text-decoration:none">GitHub</a>
+        · Built with ❤️ by Cabir Pekdemir
+      </div>
+
+    </div>`;
+}
+
+function mkDoc(id, title, body) {
+  return \`
+    <div id="\${id}" style="margin-bottom:28px">
+      <div style="font-size:16px;font-weight:700;margin-bottom:12px;padding-bottom:8px;
+        border-bottom:1px solid var(--card-border)">\${title}</div>
+      <div>\${body}</div>
+    </div>\`;
+}
+
+function mkPre() {
+  return 'background:#0f172a;color:#e2e8f0;border-radius:10px;padding:16px 18px;font-size:12.5px;overflow-x:auto;font-family:monospace;line-height:1.6;margin:10px 0';
+}
+
+function mkCode() {
+  return 'background:var(--bg2);border-radius:4px;padding:1px 5px;font-family:monospace;font-size:12px';
 }
