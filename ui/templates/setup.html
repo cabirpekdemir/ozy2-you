@@ -348,14 +348,27 @@
       </div>
     </div>
 
-    <!-- ── Step 4: Name + Finish ── -->
+    <!-- ── Step 4: Name + Email + Language + Finish ── -->
     <div class="step-panel" id="step-4">
       <h2>Almost done!</h2>
-      <p class="sub">Tell OZY2 your name so it can greet you properly.</p>
+      <p class="sub">Set your preferences to get started.</p>
       <div class="err-msg" id="finish-err"></div>
       <div class="field">
-        <label>Your name (optional)</label>
+        <label>Your name <span style="color:var(--muted,#888);font-weight:400">(optional)</span></label>
         <input type="text" id="user-name" placeholder="Alex" maxlength="40">
+      </div>
+      <div class="field">
+        <label>Email address
+          <span style="color:var(--muted,#888);font-weight:400"> — optional, for release notes & updates</span>
+        </label>
+        <input type="email" id="user-email" placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label>Language</label>
+        <select id="lang-select">
+          <option value="en" selected>🇬🇧 English</option>
+          <option value="tr">🇹🇷 Türkçe</option>
+        </select>
       </div>
       <div class="field">
         <label>Theme</label>
@@ -525,10 +538,11 @@ async function finish() {
     api_key:   state.provider === "ollama"
                  ? (document.getElementById("ollama-url")?.value || "http://localhost:11434")
                  : (document.getElementById("api-key")?.value?.trim() || ""),
-    package:   state.plan || "you",
-    user_name: document.getElementById("user-name")?.value?.trim() || "",
-    theme:     document.getElementById("theme-select")?.value || "dark",
-    language:  "en",
+    package:    state.plan || "you",
+    user_name:  document.getElementById("user-name")?.value?.trim() || "",
+    user_email: document.getElementById("user-email")?.value?.trim() || "",
+    theme:      document.getElementById("theme-select")?.value || "dark",
+    language:   document.getElementById("lang-select")?.value || "en",
   };
 
   try {

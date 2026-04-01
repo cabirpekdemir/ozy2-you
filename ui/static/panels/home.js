@@ -56,6 +56,23 @@ function init_home(el) {
         </div>
       </div>
 
+      <!-- Upgrade promo -->
+      <div style="border-radius:14px;padding:16px 20px;margin-bottom:16px;
+        background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(16,185,129,0.08));
+        border:1px solid rgba(99,102,241,0.25);display:flex;align-items:center;gap:14px;
+        cursor:pointer" onclick="showPanel('packages')">
+        <div style="font-size:28px;flex-shrink:0">🚀</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:14px;margin-bottom:2px">
+            OZY Professional, Social & Business coming soon
+          </div>
+          <div style="color:var(--text-3);font-size:12px;line-height:1.4">
+            Multi-agent workflows · WhatsApp · Team tools · CRM — join the waitlist
+          </div>
+        </div>
+        <div style="color:var(--accent);font-size:18px;flex-shrink:0">→</div>
+      </div>
+
     </div>
   `;
 

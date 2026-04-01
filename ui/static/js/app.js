@@ -2,7 +2,15 @@
 
 const _loaded = new Set();
 
+// Set of allowed panels for the current package (null = all allowed)
+let _allowedPanels = null;
+
 function showPanel(name) {
+  // Guard: redirect to home if panel is locked for current package
+  if (_allowedPanels !== null && !_allowedPanels.has(name)) {
+    if (name !== 'home') { showPanel('home'); return; }
+  }
+
   // Update panels
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById(`panel-${name}`)?.classList.add('active');
@@ -130,15 +138,40 @@ function _showDemoBanner(used, limit, name) {
   document.body.style.paddingBottom = '40px';
 }
 
+// ── Package-based nav filter ──────────────────────────────────
+// Fetches current package from API and hides locked nav items.
+// `features: null` means full (all panels visible).
+async function _applyPackageFilter() {
+  try {
+    const r = await fetch('/api/packages/current');
+    const d = await r.json();
+    if (!d.ok) return;
+    const features = d.tier?.features;   // null = all panels unlocked
+    if (features === null) { _allowedPanels = null; return; }
+    _allowedPanels = new Set(features);
+    // Hide any nav/bnav item whose data-panel is not in the allowed list
+    document.querySelectorAll('[data-panel]').forEach(el => {
+      if (!_allowedPanels.has(el.dataset.panel)) el.style.display = 'none';
+    });
+    // Also hide section labels that have no visible items after them
+    document.querySelectorAll('.nav-section-label').forEach(label => {
+      let next = label.nextElementSibling;
+      let hasVisible = false;
+      while (next && !next.classList.contains('nav-section-label')) {
+        if (next.style.display !== 'none') { hasVisible = true; break; }
+        next = next.nextElementSibling;
+      }
+      if (!hasVisible) label.style.display = 'none';
+    });
+  } catch {}
+}
+
 // ── Demo: sidebar nav filtreleme ──────────────────────────────
-// Demo kullanıcılara sadece data-tier="you" itemlar gösterilir.
-// Gmail/Calendar/Telegram/Premium itemlar gizlenir.
+// Demo kullanıcılara (is_demo=true) sadece data-tier="you" itemlar gösterilir.
 function _filterNavForDemo() {
   const DEMO_TIERS = new Set(['you']);
   document.querySelectorAll('[data-tier]').forEach(el => {
-    if (!DEMO_TIERS.has(el.dataset.tier)) {
-      el.style.display = 'none';
-    }
+    if (!DEMO_TIERS.has(el.dataset.tier)) el.style.display = 'none';
   });
 }
 
@@ -187,6 +220,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load language
   const lang = localStorage.getItem('ozy2_lang') || 'en';
   await I18N.load(lang);
+
+  // Apply package-based nav filtering (must run before showPanel)
+  await _applyPackageFilter();
 
   // Restore panel from URL hash, or default to 'home'
   const hashPanel = location.hash.slice(1);

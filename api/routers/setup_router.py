@@ -51,6 +51,7 @@ async def complete_setup(request: Request):
         "model":      data.get("model", "gemini-2.5-flash"),
         "package":    data.get("package", "you"),
         "user_name":  data.get("user_name", "").strip(),
+        "user_email": data.get("user_email", "").strip(),
         "theme":      data.get("theme", "dark"),
         "language":   data.get("language", "en"),
         "_first_run": False,
