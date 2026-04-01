@@ -58,7 +58,7 @@ function init_settings(el) {
         <label style="font-size:13px;color:var(--text-3);display:block;margin-bottom:6px">
           Telegram Chat ID
           <span style="font-size:11px;color:var(--text-3);font-weight:400">
-            — <a href="https://t.me/userinfobot" target="_blank" style="color:var(--accent)">@userinfobot</a>'a yaz, ID'ni yolla
+            — write to <a href="https://t.me/userinfobot" target="_blank" style="color:var(--accent)">@userinfobot</a>, it will send your ID
           </span>
         </label>
         <input id="s-telegram-users" class="input" placeholder="123456789"
@@ -190,14 +190,14 @@ function init_settings(el) {
 
       <!-- TTS -->
       <div class="card" style="padding:20px;margin-bottom:16px">
-        <div class="card-header" style="margin-bottom:4px;font-size:15px;font-weight:600">🔊 Sesli Yanıt (TTS)</div>
+        <div class="card-header" style="margin-bottom:4px;font-size:15px;font-weight:600">🔊 Voice Response (TTS)</div>
         <div style="font-size:12px;color:var(--text-3);margin-bottom:14px">
-          Microsoft Edge Neural TTS — ücretsiz, API anahtarı gerektirmez. Telegram'dan gelen mesajlara sesli yanıt verir.
+          Microsoft Edge Neural TTS — free, no API key required. Provides voice responses to incoming Telegram messages.
         </div>
 
         <!-- Enable toggle -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <span style="font-size:13px">Sesli yanıtı etkinleştir</span>
+          <span style="font-size:13px">Enable voice response</span>
           <label class="toggle-switch">
             <input type="checkbox" id="tts-enabled" onchange="ttsSaveEnabled(this.checked)">
             <span class="toggle-slider"></span>
@@ -206,12 +206,12 @@ function init_settings(el) {
 
         <!-- Voice selector -->
         <div style="margin-bottom:12px">
-          <label style="font-size:12px;color:var(--text-3);display:block;margin-bottom:6px">Ses Seçimi</label>
+          <label style="font-size:12px;color:var(--text-3);display:block;margin-bottom:6px">Voice Selection</label>
           <div style="display:flex;gap:8px">
             <select id="tts-voice" class="input" style="flex:1" onchange="ttsSaveVoice(this.value)">
-              <option value="">Yükleniyor...</option>
+              <option value="">Loading...</option>
             </select>
-            <button class="btn btn-ghost btn-sm" onclick="ttsTest()" title="Test et">▶️</button>
+            <button class="btn btn-ghost btn-sm" onclick="ttsTest()" title="Test">▶️</button>
           </div>
         </div>
 
@@ -223,14 +223,14 @@ function init_settings(el) {
 
       <!-- Health Check -->
       <div class="card" style="padding:20px;margin-bottom:16px">
-        <div class="card-header" style="margin-bottom:4px;font-size:15px;font-weight:600">🏥 Sistem Sağlığı</div>
+        <div class="card-header" style="margin-bottom:4px;font-size:15px;font-weight:600">🏥 System Health</div>
         <div style="font-size:12px;color:var(--text-3);margin-bottom:14px">
-          Tüm servisleri test eder. Rapor otomatik olarak 09:00 ve 21:00'da Telegram'a gönderilir.
+          Tests all services. Report is automatically sent to Telegram at 09:00 and 21:00.
         </div>
         <div id="health-result" style="margin-bottom:12px"></div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-ghost" style="flex:1" onclick="healthRun()">🔍 Şimdi Test Et</button>
-          <button class="btn btn-ghost" style="flex:1" onclick="healthSend()">📩 Telegram'a Gönder</button>
+          <button class="btn btn-ghost" style="flex:1" onclick="healthRun()">🔍 Run Test Now</button>
+          <button class="btn btn-ghost" style="flex:1" onclick="healthSend()">📩 Send to Telegram</button>
         </div>
       </div>
 
@@ -585,32 +585,32 @@ async function updateRemoteInfo(enabled) {
 
 // ── Health Check ──────────────────────────────────────────────────────────────
 
-// Tüm testlerin tanımı (health_check.py ile senkron)
+// All test definitions (synced with health_check.py)
 const HEALTH_TESTS = [
-  { category:'Core',       emoji:'⚙️',  name:'Settings API'    },
-  { category:'Core',       emoji:'🔐',  name:'Auth Durumu'     },
-  { category:'Google',     emoji:'🔗',  name:'Google OAuth'    },
-  { category:'Google',     emoji:'📧',  name:'Gmail'           },
-  { category:'Google',     emoji:'📅',  name:'Calendar'        },
-  { category:'Google',     emoji:'💾',  name:'Drive'           },
-  { category:'Üretkenlik', emoji:'✅',  name:'Tasks'           },
-  { category:'Üretkenlik', emoji:'🧠',  name:'Memory'          },
-  { category:'Üretkenlik', emoji:'☀️',  name:'Briefing'        },
-  { category:'İletişim',   emoji:'✈️',  name:'Telegram Bot'    },
-  { category:'Medya',      emoji:'▶️',  name:'YouTube Kanallar'},
-  { category:'Medya',      emoji:'📖',  name:'Kitap Takipçi'   },
-  { category:'Akıllı Ev',  emoji:'🏠',  name:'Smart Home'      },
+  { category:'Core',         emoji:'⚙️',  name:'Settings API'    },
+  { category:'Core',         emoji:'🔐',  name:'Auth Status'     },
+  { category:'Google',       emoji:'🔗',  name:'Google OAuth'    },
+  { category:'Google',       emoji:'📧',  name:'Gmail'           },
+  { category:'Google',       emoji:'📅',  name:'Calendar'        },
+  { category:'Google',       emoji:'💾',  name:'Drive'           },
+  { category:'Productivity', emoji:'✅',  name:'Tasks'           },
+  { category:'Productivity', emoji:'🧠',  name:'Memory'          },
+  { category:'Productivity', emoji:'☀️',  name:'Briefing'        },
+  { category:'Communication',emoji:'✈️',  name:'Telegram Bot'    },
+  { category:'Media',        emoji:'▶️',  name:'YouTube Channels'},
+  { category:'Media',        emoji:'📖',  name:'Book Tracker'    },
+  { category:'Smart Home',   emoji:'🏠',  name:'Smart Home'      },
 ];
 
 async function healthRun() {
   const el = document.getElementById('health-result');
   if (!el) return;
 
-  // 1. Önce tüm testleri "bekliyor" olarak göster
+  // 1. Show all tests as "pending" first
   const cats = {};
   HEALTH_TESTS.forEach(t => { cats[t.category] = cats[t.category] || []; cats[t.category].push(t); });
   let skeleton = `<div style="background:var(--bg3);border-radius:10px;padding:12px">
-    <div style="font-size:13px;color:var(--text-3);margin-bottom:10px">⏳ Testler çalışıyor...</div>`;
+    <div style="font-size:13px;color:var(--text-3);margin-bottom:10px">⏳ Running tests...</div>`;
   for (const [cat, items] of Object.entries(cats)) {
     skeleton += `<div style="font-weight:600;font-size:12px;margin:8px 0 4px">⬜ ${cat}</div>`;
     items.forEach(t => {
@@ -621,7 +621,7 @@ async function healthRun() {
   skeleton += '</div>';
   el.innerHTML = skeleton;
 
-  // 2. Sonuçları al
+  // 2. Fetch results
   try {
     const r = await fetch('/api/health');
     const d = await r.json();
@@ -631,7 +631,7 @@ async function healthRun() {
     const color = pct === 100 ? 'var(--green)' : pct >= 70 ? '#f59e0b' : 'var(--red)';
     const icon  = pct === 100 ? '✅' : pct >= 70 ? '🟡' : '🔴';
 
-    // Kategorilere göre grupla
+    // Group by category
     const resCats = {};
     (d.results || []).forEach(r => {
       resCats[r.category] = resCats[r.category] || [];
@@ -649,7 +649,7 @@ async function healthRun() {
         const detail = !i.passed && i.detail
           ? `<span style="color:var(--red);font-size:11px"> — ${i.detail.substring(0,55)}</span>` : '';
         const req    = i.required && !i.passed
-          ? `<span style="background:#ef444420;color:var(--red);font-size:10px;padding:1px 5px;border-radius:4px;margin-left:4px">KRİTİK</span>` : '';
+          ? `<span style="background:#ef444420;color:var(--red);font-size:10px;padding:1px 5px;border-radius:4px;margin-left:4px">CRITICAL</span>` : '';
         rows += `<div style="padding:3px 0 3px 12px;font-size:12px">${mark} ${i.emoji} ${i.name}${ms}${req}${detail}</div>`;
       });
     }
@@ -659,14 +659,14 @@ async function healthRun() {
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)">
           <span style="font-size:24px">${icon}</span>
           <div style="flex:1">
-            <div style="font-weight:700;font-size:15px;color:${color}">${pct}% Sağlıklı</div>
+            <div style="font-weight:700;font-size:15px;color:${color}">${pct}% Healthy</div>
             <div style="font-size:11px;color:var(--text-3)">${d.passed}/${d.total} test · ${d.duration_ms}ms</div>
           </div>
         </div>
         ${rows}
       </div>`;
   } catch(e) {
-    el.innerHTML = `<span style="color:var(--red);font-size:13px">❌ Bağlantı hatası: ${e.message}</span>`;
+    el.innerHTML = `<span style="color:var(--red);font-size:13px">❌ Connection error: ${e.message}</span>`;
   }
 }
 
@@ -674,9 +674,9 @@ async function healthSend() {
   const r = await fetch('/api/health/send', { method: 'POST' });
   const d = await r.json();
   if (d.ok) {
-    toast('Rapor Telegram\'a gönderildi ✅', 'success');
+    toast('Report sent to Telegram ✅', 'success');
   } else {
-    toast(d.error || 'Gönderilemedi', 'error');
+    toast(d.error || 'Could not send', 'error');
   }
 }
 
@@ -686,7 +686,7 @@ let _ttsAllVoices = [];
 let _ttsLang      = 'all';
 
 async function ttsLoad() {
-  // Config yükle
+  // Load config
   try {
     const cfg = await fetch('/api/tts/config').then(r => r.json());
     const chk = document.getElementById('tts-enabled');
@@ -694,7 +694,7 @@ async function ttsLoad() {
     _ttsCurrentVoice = cfg.voice;
   } catch {}
 
-  // Sesleri yükle
+  // Load voices
   try {
     const r  = await fetch('/api/tts/voices?featured_only=false');
     const d  = await r.json();
@@ -703,7 +703,7 @@ async function ttsLoad() {
     ttsRenderVoices();
   } catch (e) {
     const sel = document.getElementById('tts-voice');
-    if (sel) sel.innerHTML = '<option value="">Yüklenemedi</option>';
+    if (sel) sel.innerHTML = '<option value="">Failed to load</option>';
   }
 }
 
@@ -711,7 +711,7 @@ function ttsRenderLangFilter() {
   const el = document.getElementById('tts-lang-filter');
   if (!el) return;
   const langs = ['all', ...new Set(_ttsAllVoices.map(v => v.lang || v.locale?.split('-')[0]))].slice(0, 12);
-  const labels = { all:'Tümü', tr:'🇹🇷 TR', en:'🇬🇧 EN', de:'🇩🇪 DE', fr:'🇫🇷 FR',
+  const labels = { all:'All', tr:'🇹🇷 TR', en:'🇬🇧 EN', de:'🇩🇪 DE', fr:'🇫🇷 FR',
                    es:'🇪🇸 ES', ar:'🇸🇦 AR', ja:'🇯🇵 JA', zh:'🇨🇳 ZH', ko:'🇰🇷 KO',
                    it:'🇮🇹 IT', pt:'🇧🇷 PT', ru:'🇷🇺 RU' };
   el.innerHTML = langs.map(l => `
@@ -756,7 +756,7 @@ async function ttsSaveVoice(voice) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...cfg.settings, tts_voice: voice }),
     });
-    toast('Ses kaydedildi', 'success');
+    toast('Voice saved', 'success');
   } catch {}
 }
 
@@ -768,7 +768,7 @@ async function ttsSaveEnabled(enabled) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...cfg.settings, tts_enabled: enabled }),
     });
-    toast(enabled ? 'TTS açıldı 🔊' : 'TTS kapatıldı', 'info');
+    toast(enabled ? 'TTS enabled 🔊' : 'TTS disabled', 'info');
   } catch {}
 }
 
@@ -791,7 +791,7 @@ async function ttsTest() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: sample, voice }),
     });
-    if (!r.ok) { toast('Ses üretilemedi', 'error'); return; }
+    if (!r.ok) { toast('Could not generate audio', 'error'); return; }
     const blob = await r.blob();
     const url  = URL.createObjectURL(blob);
     const audio = document.getElementById('tts-preview');
@@ -802,6 +802,6 @@ async function ttsTest() {
       setTimeout(() => URL.revokeObjectURL(url), 10000);
     }
   } catch (e) {
-    toast('TTS hatası: ' + e.message, 'error');
+    toast('TTS error: ' + e.message, 'error');
   }
 }

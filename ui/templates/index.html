@@ -107,6 +107,10 @@
       </div>
 
       <div class="nav-section-label" data-tier="you" data-i18n="navgroup.system">SYSTEM</div>
+      <div class="nav-item" data-panel="profile" data-tier="you" onclick="showPanel('profile')">
+        <span class="nav-icon">👤</span>
+        <span data-i18n="nav.profile">Profile</span>
+      </div>
       <div class="nav-item" data-panel="skills" data-tier="you" onclick="showPanel('skills')">
         <span class="nav-icon">⚡</span>
         <span data-i18n="nav.skills">Skills</span>
@@ -122,9 +126,9 @@
       <div class="nav-item" data-panel="packages" data-tier="you" onclick="showPanel('packages')"
            style="border-top:1px solid var(--card-border,#333);margin-top:4px;padding-top:6px">
         <span class="nav-icon">📦</span>
-        <span>Diğer Paketler</span>
+        <span>Other Packages</span>
         <span style="margin-left:auto;font-size:0.6rem;background:#6366f122;color:#6366f1;
-                     padding:1px 5px;border-radius:999px;font-weight:700">YENİ</span>
+                     padding:1px 5px;border-radius:999px;font-weight:700">NEW</span>
       </div>
     </nav>
 
@@ -185,6 +189,7 @@
       <div class="panel" id="panel-marketplace"></div>
       <div class="panel" id="panel-automations"></div>
       <div class="panel" id="panel-packages"></div>
+      <div class="panel" id="panel-profile"></div>
       <div class="panel" id="panel-settings"></div>
 
     </div>

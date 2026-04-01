@@ -104,7 +104,7 @@ async function loadSidebarPlanBadge() {
     document.getElementById('sidebar-role-name').textContent = (roles[role] || role).split(' ').slice(1).join(' ') || role;
     badge.style.display = 'block';
 
-    // Demo banner — sorgu sayacı + nav filtreleme
+    // Demo banner — query counter + nav filtering
     if (mr.is_demo) {
       _showDemoBanner(mr.query_count || 0, mr.query_limit || 10, mr.demo_name || '');
       _filterNavForDemo();
@@ -112,7 +112,7 @@ async function loadSidebarPlanBadge() {
   } catch {}
 }
 
-// ── Demo sorgu sayacı banner ───────────────────────────────────
+// ── Demo query counter banner ─────────────────────────────────
 function _showDemoBanner(used, limit, name) {
   if (document.getElementById('demo-banner')) return; // already shown
   const left = Math.max(0, limit - used);
@@ -130,8 +130,8 @@ function _showDemoBanner(used, limit, name) {
     <div style="flex:1;background:#1e2130;border-radius:999px;height:6px;overflow:hidden">
       <div style="width:${pct}%;height:100%;background:${left===0?'#f43f5e':'#4f8ef7'};border-radius:999px;transition:width .3s"></div>
     </div>
-    <span style="color:${left===0?'#f43f5e':'#4f8ef7'};font-weight:600">${left} / ${limit} sorgu kaldı</span>
-    ${left === 0 ? '<span style="color:#f43f5e">· Limite ulaşıldı</span>' : ''}
+    <span style="color:${left===0?'#f43f5e':'#4f8ef7'};font-weight:600">${left} / ${limit} queries left</span>
+    ${left === 0 ? '<span style="color:#f43f5e">· Limit reached</span>' : ''}
   `;
   document.body.appendChild(bar);
   // Keep bottom padding so chat doesn't hide behind banner
@@ -166,8 +166,8 @@ async function _applyPackageFilter() {
   } catch {}
 }
 
-// ── Demo: sidebar nav filtreleme ──────────────────────────────
-// Demo kullanıcılara (is_demo=true) sadece data-tier="you" itemlar gösterilir.
+// ── Demo: sidebar nav filtering ──────────────────────────────
+// For demo users (is_demo=true) only data-tier="you" items are shown.
 function _filterNavForDemo() {
   const DEMO_TIERS = new Set(['you']);
   document.querySelectorAll('[data-tier]').forEach(el => {
@@ -176,7 +176,7 @@ function _filterNavForDemo() {
 }
 
 // ── Inactivity auto-logout (remote access only) ───────────────
-const IDLE_MS = 5 * 60 * 1000; // 5 dakika
+const IDLE_MS = 5 * 60 * 1000; // 5 minutes
 let _idleTimer = null;
 
 async function _checkRemoteAndStartIdle() {
@@ -204,8 +204,8 @@ async function _idleLogout() {
     font-family:-apple-system,sans-serif;color:#e8eaf2;gap:12px;`;
   ov.innerHTML = `
     <div style="font-size:44px">🔒</div>
-    <div style="font-size:18px;font-weight:600">Oturum süresi doldu</div>
-    <div style="font-size:13px;color:#5a6380">5 dakika hareketsizlik nedeniyle kilitlendi</div>
+    <div style="font-size:18px;font-weight:600">Session expired</div>
+    <div style="font-size:13px;color:#5a6380">Locked due to 5 minutes of inactivity</div>
   `;
   document.body.appendChild(ov);
   setTimeout(() => window.location.replace('/login'), 1500);
@@ -233,7 +233,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('sidebar-toggle').style.display = 'flex';
   }
 
-  // Hareketsizlik timer'ını başlat (remote access aktifse)
+  // Start inactivity timer (remote access only)
   _checkRemoteAndStartIdle();
 
   // Sidebar plan badge

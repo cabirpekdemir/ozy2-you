@@ -55,3 +55,16 @@ async def clear_history():
     from core.memory import clear_history
     clear_history()
     return {"ok": True}
+
+
+@router.get("/stats")
+async def memory_stats():
+    """Returns counts for profile panel display."""
+    from core.memory import get_all_facts, get_history
+    facts   = get_all_facts()
+    history = get_history(limit=1000)
+    return {
+        "ok":           True,
+        "fact_count":   len(facts),
+        "history_count": len(history),
+    }
