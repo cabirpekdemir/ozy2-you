@@ -274,7 +274,8 @@ async function sendMessage(preset = null) {
     botEl = addMessage('assistant', '');
     const bubble = botEl.querySelector('div:last-child');
 
-    while (true) {
+    let streamDone = false;
+    while (!streamDone) {
       const { done, value } = await reader.read();
       if (done) break;
 
@@ -282,7 +283,7 @@ async function sendMessage(preset = null) {
       for (const line of lines) {
         if (!line.startsWith('data:')) continue;
         const data = line.slice(5).trim();
-        if (data === '[DONE]') break;
+        if (data === '[DONE]') { streamDone = true; break; }
         try {
           const obj = JSON.parse(data);
           if (obj.chunk) {

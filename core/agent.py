@@ -11,10 +11,45 @@ import json
 import logging
 from pathlib import Path
 from core.llm      import LLMClient
-from core.memory   import get_history, add_message, build_memory_block
+from core.memory   import (get_history, add_message, build_memory_block,
+                           count_history, get_history_slice)
 from core.tools    import get_all_schemas, dispatch, is_known
 
 logger = logging.getLogger(__name__)
+
+RECENT_LIMIT   = 8    # full messages sent to LLM
+SUMMARY_WINDOW = 12   # max older messages compressed into summary block
+
+
+def _build_rolling_context(session_id=None) -> list[dict]:
+    """Return messages list: compact summary of older turns + last 8 full turns."""
+    total    = count_history(session_id=session_id)
+    messages = []
+
+    if total > RECENT_LIMIT:
+        older_count = total - RECENT_LIMIT
+        # Take up to SUMMARY_WINDOW of the older messages
+        start  = max(0, older_count - SUMMARY_WINDOW)
+        older  = get_history_slice(offset=start, limit=SUMMARY_WINDOW, session_id=session_id)
+
+        if older:
+            lines = []
+            for m in older:
+                label   = "User" if m["role"] == "user" else "OZY"
+                snippet = m["content"].replace("\n", " ")[:100]
+                if len(m["content"]) > 100:
+                    snippet += "…"
+                lines.append(f"  {label}: {snippet}")
+            summary = "📜 Earlier in this conversation:\n" + "\n".join(lines)
+            # Inject as a compact context pair (counts as 2 messages, not 16+)
+            messages.append({"role": "user",      "content": summary})
+            messages.append({"role": "assistant", "content": "Understood, I have the earlier context."})
+
+    # Append the full recent messages
+    recent = get_history(limit=RECENT_LIMIT, session_id=session_id)
+    messages.extend(recent)
+    return messages
+
 
 SYSTEM_PROMPT = """You are OZY — a personal AI assistant.
 You are direct, helpful, and action-oriented.
@@ -40,23 +75,24 @@ class Agent:
         self.llm = llm
 
     async def think(self, user_message: str,
-                    notify_fn=None, permissions: list = None) -> str:
+                    notify_fn=None, permissions: list = None,
+                    session_id: str = None) -> str:
         """
         Main entry point. Returns assistant response text.
         notify_fn: optional async callback for streaming updates to UI.
         """
         from datetime import datetime
 
-        # Build context
-        history      = get_history(limit=20)
-        memory_block = build_memory_block()
+        # Build context — rolling summary + relevant memory
+        history      = _build_rolling_context(session_id=session_id)
+        memory_block = build_memory_block(query=user_message, session_id=session_id)
         system       = SYSTEM_PROMPT.format(
             memory_block=f"\n{memory_block}" if memory_block else "",
             now=datetime.now().strftime("%d %B %Y, %H:%M")
         )
 
         # Add user message to history
-        add_message("user", user_message)
+        add_message("user", user_message, session_id=session_id)
         messages = history + [{"role": "user", "content": user_message}]
 
         # Get tool schemas filtered by active package
@@ -110,22 +146,23 @@ class Agent:
         text = response if isinstance(response, str) else str(response)
 
         # Save to history
-        add_message("assistant", text)
+        add_message("assistant", text, session_id=session_id)
 
         return text
 
-    async def stream_think(self, user_message: str, permissions: list = None):
+    async def stream_think(self, user_message: str, permissions: list = None,
+                           session_id: str = None):
         """Streaming version — yields text chunks."""
         from datetime import datetime
 
-        history      = get_history(limit=20)
-        memory_block = build_memory_block()
+        history      = _build_rolling_context(session_id=session_id)
+        memory_block = build_memory_block(query=user_message, session_id=session_id)
         system       = SYSTEM_PROMPT.format(
             memory_block=f"\n{memory_block}" if memory_block else "",
             now=datetime.now().strftime("%d %B %Y, %H:%M")
         )
 
-        add_message("user", user_message)
+        add_message("user", user_message, session_id=session_id)
         messages = history + [{"role": "user", "content": user_message}]
 
         # Get tool schemas filtered by tier package and permissions
@@ -156,4 +193,4 @@ class Agent:
             full_response += chunk
             yield chunk
 
-        add_message("assistant", full_response)
+        add_message("assistant", full_response, session_id=session_id)

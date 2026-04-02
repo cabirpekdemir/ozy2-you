@@ -9,6 +9,7 @@ import re
 import secrets
 import sqlite3
 import time
+import uuid
 from collections import defaultdict
 from pathlib import Path
 
@@ -18,7 +19,7 @@ from pydantic import BaseModel
 
 # ── Demo Mode Config ──────────────────────────────────────────────────────────
 DEMO_PASSWORD    = "ozy2"          # fixed password for demo
-DEMO_QUERY_LIMIT = 10              # max AI queries per demo session
+DEMO_QUERY_LIMIT = 25              # max AI queries per demo session
 _ACCESS_LOG_DB   = Path(__file__).parent.parent.parent / "data" / "access_log.db"
 
 
@@ -112,9 +113,20 @@ def _db():
             token       TEXT PRIMARY KEY,
             expiry      REAL NOT NULL,
             role_id     TEXT NOT NULL,
-            permissions TEXT NOT NULL
+            permissions TEXT NOT NULL,
+            query_count INTEGER NOT NULL DEFAULT 0,
+            demo_info   TEXT NOT NULL DEFAULT '{}',
+            session_id  TEXT
         )
     """)
+    # Migration: add new columns if missing (for existing installs)
+    existing = [r[1] for r in con.execute("PRAGMA table_info(sessions)").fetchall()]
+    if "query_count" not in existing:
+        con.execute("ALTER TABLE sessions ADD COLUMN query_count INTEGER NOT NULL DEFAULT 0")
+    if "demo_info" not in existing:
+        con.execute("ALTER TABLE sessions ADD COLUMN demo_info TEXT NOT NULL DEFAULT '{}'")
+    if "session_id" not in existing:
+        con.execute("ALTER TABLE sessions ADD COLUMN session_id TEXT")
     con.commit()
     return con
 
@@ -123,8 +135,18 @@ def _persist_session(token: str, data: dict):
     try:
         with _db() as con:
             con.execute(
-                "INSERT OR REPLACE INTO sessions (token, expiry, role_id, permissions) VALUES (?,?,?,?)",
-                (token, data["expiry"], data["role_id"], json.dumps(data["permissions"])),
+                "INSERT OR REPLACE INTO sessions "
+                "(token, expiry, role_id, permissions, query_count, demo_info, session_id) "
+                "VALUES (?,?,?,?,?,?,?)",
+                (
+                    token,
+                    data["expiry"],
+                    data["role_id"],
+                    json.dumps(data["permissions"]),
+                    data.get("query_count", 0),
+                    json.dumps(data.get("demo_info", {})),
+                    data.get("session_id"),
+                ),
             )
     except Exception:
         pass
@@ -145,12 +167,18 @@ def load_sessions_from_db():
         now = time.time()
         with _db() as con:
             con.execute("DELETE FROM sessions WHERE expiry <= ?", (now,))
-            rows = con.execute("SELECT token, expiry, role_id, permissions FROM sessions").fetchall()
-        for token, expiry, role_id, permissions in rows:
+            rows = con.execute(
+                "SELECT token, expiry, role_id, permissions, query_count, demo_info, session_id "
+                "FROM sessions"
+            ).fetchall()
+        for token, expiry, role_id, permissions, query_count, demo_info, session_id in rows:
             _sessions[token] = {
-                "expiry": expiry,
-                "role_id": role_id,
+                "expiry":      expiry,
+                "role_id":     role_id,
                 "permissions": json.loads(permissions),
+                "query_count": query_count or 0,
+                "demo_info":   json.loads(demo_info) if demo_info else {},
+                "session_id":  session_id,
             }
     except Exception:
         pass
@@ -172,16 +200,53 @@ def _hash(pin: str) -> str:
 def _create_session(role_id: str = "admin", permissions: list = None,
                     demo_info: dict = None) -> str:
     token = secrets.token_urlsafe(32)
+    # Demo sessions get a unique UUID for data isolation across all DB tables.
+    # Admin sessions use session_id=None (queries filter WHERE session_id IS NULL).
+    sid = str(uuid.uuid4()) if demo_info else None
     data = {
         "expiry":      time.time() + SESSION_TTL,
         "role_id":     role_id,
         "permissions": permissions if permissions is not None else ["*"],
         "query_count": 0,
-        "demo_info":   demo_info or {},   # {first_name, last_name, email}
+        "demo_info":   demo_info or {},
+        "session_id":  sid,
     }
     _sessions[token] = data
     _persist_session(token, data)
     return token
+
+
+def get_session_id(token: str | None) -> str | None:
+    """Returns the UUID session_id for demo sessions; None for admin sessions."""
+    data = _sessions.get(token) if token else None
+    return data.get("session_id") if data else None
+
+
+_DATA_DIR = Path(__file__).parent.parent.parent / "data"
+
+
+def _cleanup_demo_data(session_id: str):
+    """Delete ALL data belonging to a demo session from every database."""
+    if not session_id:
+        return
+    import logging as _log
+    log = _log.getLogger(__name__)
+    dbs = {
+        "tasks.db":     ["tasks"],
+        "memory.db":    ["facts", "history"],
+        "notes.db":     ["notes"],
+        "reminders.db": ["reminders"],
+    }
+    for db_file, tables in dbs.items():
+        db_path = _DATA_DIR / db_file
+        if not db_path.exists():
+            continue
+        try:
+            with sqlite3.connect(str(db_path)) as con:
+                for table in tables:
+                    con.execute(f"DELETE FROM {table} WHERE session_id=?", (session_id,))
+        except Exception as e:
+            log.warning(f"[cleanup_demo] {db_file}/{tables}: {e}")
 
 
 def get_query_count(token: str) -> int:
@@ -200,6 +265,8 @@ def increment_query_count(token: str) -> int:
     if not data:
         return -1
     data["query_count"] = data.get("query_count", 0) + 1
+    # Persist the updated count to DB so it survives restarts
+    _persist_session(token, data)
     return data["query_count"]
 
 
@@ -328,31 +395,24 @@ async def login(req: PinRequest, request: Request, response: Response):
 
 @router.post("/demo_login")
 async def demo_login(req: DemoLoginRequest, request: Request, response: Response):
-    """Demo mode login — collects name/email, password is fixed 'ozy2'."""
+    """Demo login — collects email + optional name. No password required."""
     ip = _get_ip(request)
 
-    # Rate limit check
     if _is_locked(ip):
         return JSONResponse(
-            {"ok": False, "error": "Çok fazla deneme. 15 dakika sonra tekrar deneyin."},
+            {"ok": False, "error": "Too many failed attempts. Please try again in 15 minutes."},
             status_code=429,
         )
 
-    # Basic validation
     first = req.first_name.strip()[:50]
-    last  = req.last_name.strip()[:50]
+    last  = req.last_name.strip()[:50] or "Demo"
     email = req.email.strip().lower()[:100]
 
-    if not first or not last:
-        return JSONResponse({"ok": False, "error": "Ad ve soyad zorunludur."}, status_code=400)
+    if not first:
+        return JSONResponse({"ok": False, "error": "First name is required."}, status_code=400)
     if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-        return JSONResponse({"ok": False, "error": "Geçerli bir e-posta giriniz."}, status_code=400)
-    if req.password != DEMO_PASSWORD:
-        _record_failure(ip)
-        log_access(ip, "DEMO_LOGIN_FAILED", first_name=first, last_name=last, email=email)
-        return JSONResponse({"ok": False, "error": "Şifre hatalı."}, status_code=401)
+        return JSONResponse({"ok": False, "error": "Please enter a valid email address."}, status_code=400)
 
-    # Create demo session (viewer permissions, no admin actions)
     _clear_failures(ip)
     demo_info = {"first_name": first, "last_name": last, "email": email}
     token = _create_session("demo", ["chat", "memory:read", "tasks:read"], demo_info=demo_info)
@@ -397,6 +457,10 @@ async def get_access_log(request: Request, limit: int = 100):
 @router.post("/logout")
 async def logout(response: Response, request: Request):
     token = request.cookies.get(COOKIE)
+    # Clean up all demo data before removing the session
+    sid = get_session_id(token)
+    if sid:
+        _cleanup_demo_data(sid)
     _sessions.pop(token, None)
     _delete_session_db(token)
     response.delete_cookie(COOKIE)

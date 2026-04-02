@@ -4,7 +4,7 @@
 
 """OZY2 — Tasks API Router"""
 import html
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
 from typing import Optional
 
@@ -12,6 +12,13 @@ from typing import Optional
 def _s(v: str | None) -> str | None:
     """Strip and HTML-escape a string input."""
     return html.escape(v.strip()) if isinstance(v, str) else v
+
+
+def _sid(request: Request) -> str | None:
+    """Extract session_id from the session cookie."""
+    from api.routers.auth_router import COOKIE, get_session_id
+    return get_session_id(request.cookies.get(COOKIE))
+
 
 router = APIRouter(prefix="/api/tasks", tags=["Tasks"])
 
@@ -32,40 +39,41 @@ class TaskUpdate(BaseModel):
 
 
 @router.get("")
-async def list_tasks(status: Optional[str] = None):
+async def list_tasks(request: Request, status: Optional[str] = None):
     from integrations.tasks_db import list_tasks
-    return {"ok": True, "tasks": list_tasks(status=status)}
+    return {"ok": True, "tasks": list_tasks(status=status, session_id=_sid(request))}
 
 
 @router.post("")
-async def create_task(req: TaskCreate):
+async def create_task(request: Request, req: TaskCreate):
     from integrations.tasks_db import add_task
     task_id = add_task(
         title=_s(req.title), notes=_s(req.notes) or "",
-        priority=req.priority or "normal", due_date=req.due_date
+        priority=req.priority or "normal", due_date=req.due_date,
+        session_id=_sid(request)
     )
     return {"ok": True, "id": task_id}
 
 
 @router.patch("/{task_id}")
-async def update_task(task_id: int, req: TaskUpdate):
+async def update_task(task_id: int, request: Request, req: TaskUpdate):
     from integrations.tasks_db import update_task
     data = req.dict(exclude_none=True)
     if "title" in data:  data["title"] = _s(data["title"])
     if "notes" in data:  data["notes"] = _s(data["notes"])
-    ok = update_task(task_id, **data)
+    ok = update_task(task_id, session_id=_sid(request), **data)
     return {"ok": ok}
 
 
 @router.post("/{task_id}/complete")
-async def complete_task(task_id: int):
+async def complete_task(task_id: int, request: Request):
     from integrations.tasks_db import complete_task
-    ok = complete_task(task_id)
+    ok = complete_task(task_id, session_id=_sid(request))
     return {"ok": ok}
 
 
 @router.delete("/{task_id}")
-async def delete_task(task_id: int):
+async def delete_task(task_id: int, request: Request):
     from integrations.tasks_db import delete_task
-    ok = delete_task(task_id)
+    ok = delete_task(task_id, session_id=_sid(request))
     return {"ok": ok}

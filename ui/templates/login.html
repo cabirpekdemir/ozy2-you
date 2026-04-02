@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>OZY2 — Giriş</title>
+  <title>OZY2 — Login</title>
   <link rel="icon" type="image/png" href="/static/icons/favicon.png">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -122,14 +122,6 @@
       gap: 10px;
     }
 
-    /* Password hint */
-    .pw-hint {
-      font-size: 11px;
-      color: #3a4060;
-      margin-top: 4px;
-      text-align: left;
-    }
-
     /* Submit button */
     .submit-btn {
       width: 100%;
@@ -171,6 +163,15 @@
       font-size: 12px;
       color: #4f8ef7;
       margin-bottom: 20px;
+    }
+
+    /* Demo info text */
+    .demo-info {
+      font-size: 12px;
+      color: #5a6380;
+      margin-top: 4px;
+      text-align: left;
+      line-height: 1.4;
     }
 
     /* PIN section */
@@ -260,38 +261,33 @@
   <!-- ── DEMO FORM ── -->
   <div id="demo-section">
     <div class="limit-badge">
-      🎯 Demo &nbsp;·&nbsp; 10 ücretsiz sorgu
+      🎯 Demo &nbsp;·&nbsp; 25 free queries
     </div>
 
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Ad</label>
-        <input class="form-input" id="first_name" type="text" placeholder="Ahmet" autocomplete="given-name">
+        <label class="form-label">First Name</label>
+        <input class="form-input" id="first_name" type="text" placeholder="Alex" autocomplete="given-name">
       </div>
       <div class="form-group">
-        <label class="form-label">Soyad</label>
-        <input class="form-input" id="last_name" type="text" placeholder="Yılmaz" autocomplete="family-name">
+        <label class="form-label">Last Name <span style="color:#3a4060;font-weight:400">(optional)</span></label>
+        <input class="form-input" id="last_name" type="text" placeholder="Smith" autocomplete="family-name">
       </div>
     </div>
 
     <div class="form-group">
-      <label class="form-label">E-posta</label>
-      <input class="form-input" id="email" type="email" placeholder="ornek@email.com" autocomplete="email">
+      <label class="form-label">Email</label>
+      <input class="form-input" id="email" type="email" placeholder="you@example.com" autocomplete="email"
+             onkeydown="if(event.key==='Enter') demoLogin()">
+      <div class="demo-info">Your data is only used to provide the demo experience.</div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">Şifre</label>
-      <input class="form-input" id="demo_pw" type="password" placeholder="••••"
-             oninput="clearMsg()" onkeydown="if(event.key==='Enter') demoLogin()">
-      <div class="pw-hint">Demo şifresi: <strong>ozy2</strong></div>
-    </div>
-
-    <button class="submit-btn" id="demo-btn" onclick="demoLogin()">Demoyu Başlat →</button>
+    <button class="submit-btn" id="demo-btn" onclick="demoLogin()">Start Demo →</button>
   </div>
 
   <!-- ── PIN FORM ── -->
   <div id="pin-section" style="display:none">
-    <div class="pin-label">PIN Girin</div>
+    <div class="pin-label">Enter PIN</div>
     <div class="pin-dots" id="pin-dots">
       <div class="pin-dot" id="d0"></div>
       <div class="pin-dot" id="d1"></div>
@@ -341,42 +337,45 @@
     m.className = 'msg ' + type;
   }
 
+  function shakeBox() {
+    const box = document.getElementById('login-box');
+    box.classList.add('shake');
+    setTimeout(() => box.classList.remove('shake'), 400);
+  }
+
   // ── Demo login ─────────────────────────────────────────────────────────────
   async function demoLogin() {
-    const first    = document.getElementById('first_name').value.trim();
-    const last     = document.getElementById('last_name').value.trim();
-    const email    = document.getElementById('email').value.trim();
-    const password = document.getElementById('demo_pw').value;
+    const first = document.getElementById('first_name').value.trim();
+    const last  = document.getElementById('last_name').value.trim() || 'Demo';
+    const email = document.getElementById('email').value.trim();
 
-    if (!first || !last) { showMsg('Ad ve soyad zorunludur.'); return; }
-    if (!email.includes('@')) { showMsg('Geçerli bir e-posta giriniz.'); return; }
-    if (!password) { showMsg('Şifre boş bırakılamaz.'); return; }
+    if (!first) { showMsg('First name is required.'); return; }
+    if (!email.includes('@')) { showMsg('Please enter a valid email address.'); return; }
 
     const btn = document.getElementById('demo-btn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>Giriş yapılıyor…';
+    btn.innerHTML = '<span class="spinner"></span>Loading…';
 
     try {
       const r = await fetch('/api/auth/demo_login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ first_name: first, last_name: last, email, password }),
+        body: JSON.stringify({ first_name: first, last_name: last, email, password: 'ozy2' }),
       });
       const d = await r.json();
       if (d.ok) {
-        showMsg(`Hoş geldiniz, ${d.first_name}! Yükleniyor…`, 'ok');
+        showMsg(`Welcome, ${d.first_name}! Loading…`, 'ok');
         setTimeout(() => window.location.replace('/'), 600);
       } else {
-        showMsg(d.error || 'Giriş başarısız.');
-        document.getElementById('login-box').classList.add('shake');
-        setTimeout(() => document.getElementById('login-box').classList.remove('shake'), 400);
+        showMsg(d.error || 'Login failed. Please try again.');
+        shakeBox();
         btn.disabled = false;
-        btn.textContent = 'Demoyu Başlat →';
+        btn.textContent = 'Start Demo →';
       }
     } catch {
-      showMsg('Bağlantı hatası. Lütfen tekrar deneyin.');
+      showMsg('Connection error. Please try again.');
       btn.disabled = false;
-      btn.textContent = 'Demoyu Başlat →';
+      btn.textContent = 'Start Demo →';
     }
   }
 
@@ -418,14 +417,13 @@
       if (d.ok) {
         window.location.replace('/');
       } else {
-        showMsg(d.error || 'Yanlış PIN. Tekrar deneyin.');
-        document.getElementById('login-box').classList.add('shake');
-        setTimeout(() => document.getElementById('login-box').classList.remove('shake'), 400);
+        showMsg(d.error || 'Wrong PIN. Please try again.');
+        shakeBox();
         pin = '';
         updateDots();
       }
     } catch {
-      showMsg('Bağlantı hatası.');
+      showMsg('Connection error.');
     }
   }
 

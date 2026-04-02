@@ -13,7 +13,7 @@ from api.routers.auth_router import (
     get_session_permissions, COOKIE,
     increment_query_count, get_query_count,
     is_demo_session, get_demo_info, log_access,
-    DEMO_QUERY_LIMIT, _get_ip,
+    DEMO_QUERY_LIMIT, _get_ip, get_session_id,
 )
 
 router = APIRouter(tags=["Chat"])
@@ -25,12 +25,10 @@ def _check_demo_limit(token: str) -> dict | None:
         return None
     count = get_query_count(token)
     if count >= DEMO_QUERY_LIMIT:
-        info = get_demo_info(token)
-        name = f"{info.get('first_name','')} {info.get('last_name','')}".strip()
         return {
             "ok": False,
-            "error": f"Demo sınırına ulaştınız ({DEMO_QUERY_LIMIT} sorgu). "
-                     f"Sınırsız kullanım için bize ulaşın.",
+            "error": f"You have reached the demo limit ({DEMO_QUERY_LIMIT} queries). "
+                     f"Contact us for full access.",
             "demo_limit_reached": True,
             "query_count": count,
             "query_limit": DEMO_QUERY_LIMIT,
@@ -55,9 +53,16 @@ async def chat(request: Request):
 
     agent       = get_agent()
     permissions = get_session_permissions(token)
-    response    = await agent.think(message, permissions=permissions)
+    sid         = get_session_id(token)
 
-    # Log + count
+    try:
+        response = await agent.think(message, permissions=permissions, session_id=sid)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"[chat] agent error: {e}", exc_info=True)
+        return JSONResponse({"ok": False, "error": "Agent error. Please try again."}, status_code=500)
+
+    # Log + count — only after a successful response
     if is_demo_session(token):
         new_count = increment_query_count(token)
         info = get_demo_info(token)
@@ -87,27 +92,17 @@ async def chat_stream(request: Request, message: str = ""):
     if limit_err:
         return JSONResponse(limit_err, status_code=429)
 
-    # Log + count BEFORE streaming (so it's always recorded even if client disconnects)
-    if is_demo_session(token):
-        new_count = increment_query_count(token)
-        info = get_demo_info(token)
-        log_access(
-            ip=_get_ip(request),
-            action="DEMO_QUERY_STREAM",
-            first_name=info.get("first_name", ""),
-            last_name=info.get("last_name", ""),
-            email=info.get("email", ""),
-            session=token[:12],
-            detail=f"query #{new_count}: {message[:80]}",
-        )
-
     agent       = get_agent()
     permissions = get_session_permissions(token)
+    is_demo     = is_demo_session(token)
+    sid         = get_session_id(token)
 
     async def event_stream():
+        success = False
         try:
-            async for chunk in agent.stream_think(message, permissions=permissions):
+            async for chunk in agent.stream_think(message, permissions=permissions, session_id=sid):
                 yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+            success = True
         except asyncio.CancelledError:
             pass
         except Exception as e:
@@ -115,6 +110,19 @@ async def chat_stream(request: Request, message: str = ""):
             logging.getLogger(__name__).error(f"[chat/stream] error: {e}", exc_info=True)
             yield f"data: {json.dumps({'chunk': f'[Error] {e}'})}\n\n"
         finally:
+            # Count only after a successful stream — errors don't burn quota
+            if success and is_demo:
+                new_count = increment_query_count(token)
+                info = get_demo_info(token)
+                log_access(
+                    ip=_get_ip(request),
+                    action="DEMO_QUERY_STREAM",
+                    first_name=info.get("first_name", ""),
+                    last_name=info.get("last_name", ""),
+                    email=info.get("email", ""),
+                    session=token[:12],
+                    detail=f"query #{new_count}: {message[:80]}",
+                )
             yield "data: [DONE]\n\n"
 
     return StreamingResponse(
@@ -128,11 +136,13 @@ async def chat_stream(request: Request, message: str = ""):
 
 
 @router.get("/api/chat/history")
-async def history():
-    return {"ok": True, "history": get_history(limit=50)}
+async def history(request: Request):
+    sid = get_session_id(request.cookies.get(COOKIE))
+    return {"ok": True, "history": get_history(limit=50, session_id=sid)}
 
 
 @router.delete("/api/chat/history")
-async def clear():
-    clear_history()
+async def clear(request: Request):
+    sid = get_session_id(request.cookies.get(COOKIE))
+    clear_history(session_id=sid)
     return {"ok": True}
