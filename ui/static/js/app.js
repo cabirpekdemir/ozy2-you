@@ -149,8 +149,10 @@ async function _applyPackageFilter() {
     const features = d.tier?.features;   // null = all panels unlocked
     if (features === null) { _allowedPanels = null; return; }
     _allowedPanels = new Set(features);
-    // Hide any nav/bnav item whose data-panel is not in the allowed list
+    // Hide any nav/bnav item whose data-panel is not in the allowed list.
+    // data-tier="admin" items are never hidden by package filter (admin-only logic runs separately).
     document.querySelectorAll('[data-panel]').forEach(el => {
+      if (el.dataset.tier === 'admin') return;
       if (!_allowedPanels.has(el.dataset.panel)) el.style.display = 'none';
     });
     // Also hide section labels that have no visible items after them
