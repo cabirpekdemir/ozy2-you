@@ -75,7 +75,7 @@ class LocalhostOnlyMiddleware(BaseHTTPMiddleware):
 
 
 # ── Auth Middleware: Redirect to /login if PIN is set and no valid session ────
-_PUBLIC = {"/login", "/api/auth/login", "/api/auth/status", "/api/google/auth/callback", "/static", "/favicon"}
+_PUBLIC = {"/login", "/api/auth/", "/api/google/auth/callback", "/static", "/favicon"}
 
 # Internal bypass token — health check uses this to call internal endpoints
 import secrets as _secrets
