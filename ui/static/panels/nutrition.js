@@ -3,6 +3,21 @@
 function init_nutrition(el) {
   el.innerHTML = `
     <div style="max-width:720px;margin:0 auto;padding:16px">
+
+      <!-- Medical disclaimer -->
+      <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);
+                  border-radius:12px;padding:12px 16px;margin-bottom:16px;
+                  display:flex;gap:10px;align-items:flex-start">
+        <span style="font-size:1.2rem;flex-shrink:0">⚠️</span>
+        <div style="font-size:.78rem;line-height:1.6;color:var(--text-2)">
+          <strong>For informational purposes only.</strong>
+          Nutrition information and diet suggestions provided by OZY are not a substitute
+          for professional medical or dietary advice. Always consult a qualified healthcare
+          provider before making significant changes to your diet, especially if you have
+          any health conditions or take medication.
+        </div>
+      </div>
+
       <div style="display:flex;gap:6px;background:var(--card-bg);border:1px solid var(--card-border);
                   border-radius:var(--r-lg);padding:4px;margin-bottom:20px">
         <button id="nt-tab-track" onclick="ntTab('track')"

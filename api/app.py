@@ -231,6 +231,7 @@ from api.routers.women_router       import router as women_router
 from api.routers.daily_router       import router as daily_router
 from api.routers.profile_router       import router as profile_router
 from api.routers.automations_router   import router as automations_router
+from api.routers.plans_router         import router as plans_router
 
 # Optional routers (may not be present in all editions)
 _optional_routers = []
@@ -238,7 +239,6 @@ for _mod, _alias in [
     ("api.routers.youtube_router", "youtube_router"),
     ("api.routers.stocks_router",  "stocks_router"),
     ("api.routers.lesson_router",  "lesson_router"),
-    ("api.routers.plans_router",   "plans_router"),
 ]:
     try:
         import importlib as _il
@@ -277,6 +277,7 @@ app.include_router(women_router)
 app.include_router(daily_router)
 app.include_router(profile_router)
 app.include_router(automations_router)
+app.include_router(plans_router)
 
 
 @app.get("/login", response_class=HTMLResponse)

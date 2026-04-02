@@ -21,6 +21,7 @@ class ProfileData(BaseModel):
     country:       Optional[str] = ""
     gender:        Optional[str] = ""        # male | female | other | prefer_not
     occupation:    Optional[str] = ""
+    blood_type:    Optional[str] = ""        # A+, A-, B+, B-, AB+, AB-, O+, O-
     interests:     Optional[List[str]] = []
     hobbies:       Optional[List[str]] = []
     pets:          Optional[List[str]] = []
@@ -70,6 +71,8 @@ async def save_profile(request: Request, data: ProfileData):
         parts.append(f"Gender: {label}")
     if data.occupation:
         parts.append(f"Occupation: {data.occupation}")
+    if data.blood_type:
+        parts.append(f"Blood type: {data.blood_type}")
     if data.interests:
         parts.append(f"Interests: {', '.join(data.interests)}")
     if data.hobbies:

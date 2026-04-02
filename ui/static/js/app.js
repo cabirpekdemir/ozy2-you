@@ -311,13 +311,16 @@ function _showOnboarding(isDemo) {
   const box   = document.getElementById('onboarding-box');
   if (!modal || !box) return;
 
-  // step: -1=AI setup, 0=AI persona (name+avatar), 1-4=personal info, 5=gender, 6=interests, 7=diet
+  // step: -1=AI setup, 0=AI persona, 1-4=personal info, 5=gender, 6=blood type, 7=interests, 8=diet
   const INPUT_STEPS = [
     { emoji:'✨', q:"What's your name?",            sub:"I'd love to know who I'm talking to!", id:'ob-name',    type:'text',   placeholder:'Your name' },
     { emoji:'🎂', q:'How old are you?',             sub:'No judgment, I promise 😄',            id:'ob-age',     type:'number', placeholder:'e.g. 28' },
     { emoji:'🌍', q:'Where in the world are you?',  sub:"I love learning about different places!", id:'ob-country', type:'text', placeholder:'e.g. Turkey, USA…' },
     { emoji:'💼', q:'What do you do?',              sub:'This helps me give better advice!',    id:'ob-occ',     type:'text',   placeholder:'e.g. Designer, Student, Engineer…' },
   ];
+
+  const BLOOD_TYPES = ['A+','A-','B+','B-','AB+','AB-','O+','O-'];
+  let selBloodType = '';
 
   const AVATARS = ['🤖','🦊','🦉','🐬','🌟','🦋','🐱','🐺','🌙','🎭','🎨','🍀'];
 
@@ -339,8 +342,8 @@ function _showOnboarding(isDemo) {
   let selAiName = '';
   const selInterests = new Set();
 
-  // TOTAL steps for progress bar: ai + persona + inputs + gender + interests + diet
-  const TOTAL = 2 + INPUT_STEPS.length + 3;
+  // TOTAL steps for progress bar: ai + persona + inputs + gender + blood + interests + diet
+  const TOTAL = 2 + INPUT_STEPS.length + 4;
 
   function _pct(current) {
     const p = Math.round((current / (TOTAL - 1)) * 100);
@@ -470,8 +473,38 @@ function _showOnboarding(isDemo) {
         <button id="ob-next" onclick="obNext()" style="width:100%;margin-top:16px;padding:12px;border-radius:12px;border:none;background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem;font-weight:600">Continue →</button>
         <button onclick="obBack()" style="width:100%;margin-top:8px;background:none;border:none;color:inherit;opacity:.35;cursor:pointer;font-size:.8rem">← Back</button>`;
 
-    // ── STEP interests ────────────────────────────────────────────
+    // ── STEP blood type ───────────────────────────────────────────
     } else if (step === INPUT_STEPS.length + 2) {
+      box.innerHTML = `
+        ${_pct(INPUT_STEPS.length + 3)}
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="font-size:3rem;margin-bottom:10px">🩸</div>
+          <h2 style="margin:0 0 6px;font-size:1.2rem;font-weight:800">What's your blood type?</h2>
+          <p style="margin:0;opacity:.5;font-size:.82rem">Helps personalize diet & health recommendations</p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+          ${BLOOD_TYPES.map(bt=>`
+            <button onclick="obBloodType(this,'${bt}')" data-bt="${bt}"
+              style="padding:14px 8px;border-radius:12px;font-size:1rem;font-weight:700;
+                     border:2px solid var(--border,#444);cursor:pointer;
+                     ${selBloodType===bt?'background:var(--accent,#6366f1);color:#fff;border-color:transparent':'background:transparent;color:inherit'}">
+              ${bt}
+            </button>`).join('')}
+        </div>
+        <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);
+             border-radius:10px;padding:10px 14px;font-size:.78rem;color:rgba(239,68,68,.9);
+             margin-bottom:16px;line-height:1.5">
+          ⚠️ <strong>Not sure?</strong> Skip this — don't guess your blood type. Only enter it if you know it for certain.
+        </div>
+        <button id="ob-next" onclick="obNext()" style="width:100%;padding:12px;border-radius:12px;
+          border:none;background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem;font-weight:600">
+          Continue →
+        </button>
+        <button onclick="obBack()" style="width:100%;margin-top:8px;background:none;border:none;
+          color:inherit;opacity:.35;cursor:pointer;font-size:.8rem">← Back</button>`;
+
+    // ── STEP interests ────────────────────────────────────────────
+    } else if (step === INPUT_STEPS.length + 3) {
       box.innerHTML = `
         ${_pct(INPUT_STEPS.length + 3)}
         <div style="text-align:center;margin-bottom:16px">
@@ -491,7 +524,7 @@ function _showOnboarding(isDemo) {
         <button onclick="obBack()" style="width:100%;margin-top:8px;background:none;border:none;color:inherit;opacity:.35;cursor:pointer;font-size:.8rem">← Back</button>`;
 
     // ── STEP diet + Finish ────────────────────────────────────────
-    } else if (step === INPUT_STEPS.length + 3) {
+    } else if (step === INPUT_STEPS.length + 4) {
       const aiLabel = selAiName || 'OZY';
       box.innerHTML = `
         ${_pct(TOTAL - 1)}
@@ -642,6 +675,16 @@ function _showOnboarding(isDemo) {
     });
   };
 
+  window.obBloodType = function(btn, bt) {
+    selBloodType = bt;
+    document.querySelectorAll('[data-bt]').forEach(b => {
+      const a = b.dataset.bt === bt;
+      b.style.background  = a ? 'var(--accent,#6366f1)' : 'transparent';
+      b.style.color       = a ? '#fff' : 'inherit';
+      b.style.borderColor = a ? 'transparent' : 'var(--border,#444)';
+    });
+  };
+
   window.obToggleInt = function(btn, i) {
     if (selInterests.has(i)) {
       selInterests.delete(i);
@@ -669,6 +712,7 @@ function _showOnboarding(isDemo) {
       country:      answers['ob-country'] || '',
       occupation:   answers['ob-occ']    || '',
       gender:       selGender,
+      blood_type:   selBloodType,
       dietary_goal: selDiet,
       interests:    [...selInterests],
       hobbies: [], pets: [],

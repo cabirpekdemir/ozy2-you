@@ -15,24 +15,18 @@ const PlansPanel = (() => {
 
     container.innerHTML = `<div class="panel-loading">Loading plans…</div>`;
 
-    // Fetch packages.json
+    // Fetch packages from API
     try {
       const [pkgsRes, settingsRes] = await Promise.all([
-        fetch("/static/../../config/packages.json"),
+        fetch("/api/plans"),
         fetch("/api/settings"),
       ]);
       packages   = await pkgsRes.json().catch(() => null);
       const cfg  = await settingsRes.json().catch(() => ({}));
-      currentPkg = cfg.package || "full";
+      currentPkg = (cfg.settings || cfg).package || "full";
     } catch (e) {
-      // If config/packages.json isn't served as static, try the API
-      try {
-        const r  = await fetch("/api/packages");
-        packages = await r.json();
-      } catch (_) {
-        container.innerHTML = `<p class="error">Could not load plan data.</p>`;
-        return;
-      }
+      container.innerHTML = `<p class="error">Could not load plan data.</p>`;
+      return;
     }
 
     render(container);
@@ -272,3 +266,10 @@ const PlansPanel = (() => {
   `;
   document.head.appendChild(style);
 })();
+
+
+/* ── OZY2 panel entry point ──────────────────────────────────────────────── */
+async function init_plans(el) {
+  // PlansPanel.load() uses document.getElementById so we just trigger it
+  await PlansPanel.load();
+}
