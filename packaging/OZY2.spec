@@ -74,6 +74,9 @@ a = Analysis(
         "api.routers.smarthome_router",
         "api.routers.women_router",
         "api.routers.daily_router",
+        "api.routers.automations_router",
+        "api.routers.plans_router",
+        "api.routers.profile_router",
         # Core
         "core.llm",
         "core.memory",
@@ -178,8 +181,8 @@ if sys.platform == "darwin":
         info_plist={
             "CFBundleName":               "OZY2",
             "CFBundleDisplayName":        "OZY2",
-            "CFBundleVersion":            "2.1.0",
-            "CFBundleShortVersionString": "2.1.0",
+            "CFBundleVersion":            "2.2.0",
+            "CFBundleShortVersionString": "2.2.0",
             "CFBundleIdentifier":         "com.ozy2.app",
             "LSMinimumSystemVersion":     "12.0",
             "NSHighResolutionCapable":    True,

@@ -5,6 +5,52 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [v2.2.0] — 2026-04-03
+
+### ✨ New Features
+
+#### 🤖 Automations Panel
+- 14 action types: send Telegram, create task, add reminder, log note, save memory, HTTP webhook, Gmail draft, log nutrition, add diary entry, create calendar event, update setting, run shell command, log baby event, send briefing
+- Visual rule builder (trigger → condition → action)
+- Cron + interval + one-shot scheduling via APScheduler
+- Run logs with success/failure tracking
+
+#### 🎤 Voice-First Accessible Assistant (`/voice`)
+- Standalone page at `/voice` for visually impaired users
+- WCAG 2.1 AAA compliant (8.6:1 contrast ratio, #FFD700 on #0a0a0a)
+- ARIA live regions, role="log", skip links, keyboard navigation (Space/Esc/C)
+- SpeechRecognition + server TTS (Microsoft Edge Neural voices)
+- AudioContext unlock on first mic click — bypasses Chrome autoplay policy
+- 10-language support with localized status messages
+- Auto-listen mode toggle
+
+#### 📷 Camera System Overhaul (edu-style)
+- Camera modal now shows "Start Camera" button first — `getUserMedia` called directly in click handler (guaranteed Chrome popup)
+- Gallery option added to camera modal
+- Permission state pre-checked: auto-starts if already granted; shows friendly guide if blocked
+- Works reliably in Diary, Baby Tracker, and any future panel
+
+#### 🎨 Onboarding Improvements
+- AI persona step: choose AI name + pick avatar from 12 emojis
+- Blood type selection (A+/A-/B+/B-/AB+/AB-/O+/O-)
+- Post-onboarding TTS welcome greeting in user's language (10 languages)
+- Warmer, more intimate tone throughout
+
+#### ⚡ Customizable Quick Actions
+- Home panel: 23 available actions, choose your favorites
+- Persistent via localStorage
+
+### 🔧 Fixes
+- `Permissions-Policy` header was blocking `camera=()` and `microphone=()` for all origins — now `camera=(self)` and `microphone=(self)`
+- `navigator.permissions.query` returning stale `denied` for camera/mic — removed unreliable pre-check, always show "Start Camera" button
+- Plans panel not loading — missing backend router + wrong fetch path + no `init_plans` function
+- Visitors panel empty despite existing leads — `demo_mode` gate removed; panel always shows for admin
+- "Günlük" → "Diary" in sidebar nav
+- Voice TTS using `audio.play()` which failed after async LLM latency — switched to `AudioContext.decodeAudioData` which doesn't expire with user gesture
+- Camera callback signature mismatch (`_cameraCallback(null, b64)` → `_cameraCallback(b64)`)
+
+---
+
 ## [v2.1.0] — 2026-04-02
 
 ### ✨ New Features
