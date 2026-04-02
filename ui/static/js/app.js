@@ -908,30 +908,30 @@ function _initCameraListeners() {
 
 function _camShowDenied(startScreen) {
   startScreen.querySelectorAll('.cam-msg').forEach(e => e.remove());
+  const isMac = /Mac/i.test(navigator.platform || navigator.userAgentData?.platform || '');
   const msg = document.createElement('div');
   msg.className = 'cam-msg';
-  msg.style.cssText = 'margin-top:14px;text-align:center;max-width:340px;line-height:1.7';
+  msg.style.cssText = 'margin-top:14px;text-align:center;max-width:360px;line-height:1.7';
   msg.innerHTML = `
     <div style="color:#f87171;font-size:.9rem;margin-bottom:14px;font-weight:600">
-      📷 Camera is blocked for this site
+      📷 Camera access is blocked
     </div>
+    ${isMac ? `
     <div style="color:#ccc;font-size:.82rem;margin-bottom:6px;text-align:left;
                 background:rgba(255,255,255,.06);border-radius:10px;padding:12px 14px">
-      <div style="margin-bottom:8px;color:#aaa;font-size:.78rem;font-weight:600;
-                  text-transform:uppercase;letter-spacing:.5px">Option 1 — Address bar</div>
-      Look for a <strong style="color:#fff">📷</strong> camera icon on the
-      <strong style="color:#fff">right side</strong> of the address bar
-      → click it → set Camera to <strong style="color:#fff">Allow</strong>
-    </div>
+      <div style="margin-bottom:6px;color:#facc15;font-size:.78rem;font-weight:700;
+                  text-transform:uppercase;letter-spacing:.5px">🍎 macOS System Settings</div>
+      <strong style="color:#fff">Apple menu</strong> →
+      System Settings → Privacy &amp; Security → <strong style="color:#fff">Camera</strong>
+      → enable <strong style="color:#fff">Google Chrome</strong> ✓
+      → quit &amp; reopen Chrome
+    </div>` : ''}
     <div style="color:#ccc;font-size:.82rem;margin-bottom:14px;text-align:left;
                 background:rgba(255,255,255,.06);border-radius:10px;padding:12px 14px;margin-top:6px">
-      <div style="margin-bottom:8px;color:#aaa;font-size:.78rem;font-weight:600;
-                  text-transform:uppercase;letter-spacing:.5px">Option 2 — Chrome Settings</div>
-      Chrome menu <strong style="color:#fff">⋮</strong>
-      → Settings → Privacy &amp; Security
-      → Site Settings → Camera
-      → find <strong style="color:#fff">demo.ozy2.com</strong>
-      → Allow
+      <div style="margin-bottom:6px;color:#aaa;font-size:.78rem;font-weight:600;
+                  text-transform:uppercase;letter-spacing:.5px">🌐 Chrome Settings</div>
+      Address bar → type <strong style="color:#fff">chrome://settings/content/camera</strong>
+      → make sure this site is not in the blocked list
     </div>
     <button onclick="location.reload()"
       style="padding:9px 22px;border-radius:50px;border:none;
