@@ -42,14 +42,19 @@ def _db():
             event_type TEXT NOT NULL,
             value      TEXT DEFAULT '',
             note       TEXT DEFAULT '',
+            photo_data TEXT DEFAULT '',
             session_id TEXT,
             created_at TEXT DEFAULT (datetime('now'))
         );
     """)
+    # Migrations
     for tbl in ("baby_profile", "baby_events"):
         cols = [r[1] for r in con.execute(f"PRAGMA table_info({tbl})").fetchall()]
         if "session_id" not in cols:
             con.execute(f"ALTER TABLE {tbl} ADD COLUMN session_id TEXT")
+    cols = [r[1] for r in con.execute("PRAGMA table_info(baby_events)").fetchall()]
+    if "photo_data" not in cols:
+        con.execute("ALTER TABLE baby_events ADD COLUMN photo_data TEXT DEFAULT ''")
     con.commit()
     return con
 
@@ -62,6 +67,7 @@ class EventCreate(BaseModel):
     event_type: str
     value: Optional[str] = ""
     note: Optional[str] = ""
+    photo_data: Optional[str] = ""   # base64 data URL
 
 
 @router.get("/profile")
@@ -80,9 +86,7 @@ async def save_profile(request: Request, req: ProfileCreate):
     sid = _sid(request)
     sc, sp = _sf(sid)
     with _db() as con:
-        existing = con.execute(
-            f"SELECT id FROM baby_profile WHERE {sc}", sp
-        ).fetchone()
+        existing = con.execute(f"SELECT id FROM baby_profile WHERE {sc}", sp).fetchone()
         if existing:
             con.execute(
                 f"UPDATE baby_profile SET name=?, birth_date=?, updated_at=datetime('now') WHERE {sc}",
@@ -103,10 +107,48 @@ async def list_events(request: Request, limit: int = 50):
     sc, sp = _sf(sid)
     with _db() as con:
         rows = con.execute(
-            f"SELECT * FROM baby_events WHERE {sc} ORDER BY created_at DESC LIMIT ?",
+            f"SELECT id,event_type,value,note,photo_data,created_at "
+            f"FROM baby_events WHERE {sc} ORDER BY created_at DESC LIMIT ?",
             (*sp, min(limit, 200))
         ).fetchall()
     return {"ok": True, "events": [dict(r) for r in rows]}
+
+
+@router.get("/events/day/{day_str}")
+async def events_for_day(day_str: str, request: Request):
+    """Return all events for a given day (YYYY-MM-DD), oldest first."""
+    sid = _sid(request)
+    sc, sp = _sf(sid)
+    with _db() as con:
+        rows = con.execute(
+            f"SELECT id,event_type,value,note,photo_data,created_at "
+            f"FROM baby_events WHERE {sc} AND date(created_at)=? ORDER BY created_at ASC",
+            (*sp, day_str)
+        ).fetchall()
+    return {"ok": True, "events": [dict(r) for r in rows]}
+
+
+@router.get("/calendar/{year}/{month}")
+async def calendar_summary(year: int, month: int, request: Request):
+    """Return per-day event counts for a given month."""
+    sid = _sid(request)
+    sc, sp = _sf(sid)
+    month_str = f"{year:04d}-{month:02d}"
+    with _db() as con:
+        rows = con.execute(
+            f"SELECT date(created_at) as day, event_type, COUNT(*) as cnt "
+            f"FROM baby_events WHERE {sc} AND strftime('%Y-%m', created_at)=? "
+            f"GROUP BY day, event_type",
+            (*sp, month_str)
+        ).fetchall()
+    # Build {day: {event_type: count}}
+    summary: dict = {}
+    for r in rows:
+        d = r["day"]
+        if d not in summary:
+            summary[d] = {}
+        summary[d][r["event_type"]] = r["cnt"]
+    return {"ok": True, "summary": summary}
 
 
 @router.post("/event")
@@ -114,8 +156,9 @@ async def add_event(request: Request, req: EventCreate):
     sid = _sid(request)
     with _db() as con:
         cur = con.execute(
-            "INSERT INTO baby_events (event_type, value, note, session_id) VALUES (?,?,?,?)",
-            (_s(req.event_type), _s(req.value) or "", _s(req.note) or "", sid)
+            "INSERT INTO baby_events (event_type, value, note, photo_data, session_id) VALUES (?,?,?,?,?)",
+            (_s(req.event_type), _s(req.value) or "", _s(req.note) or "",
+             req.photo_data or "", sid)
         )
         con.commit()
     return {"ok": True, "id": cur.lastrowid}
@@ -138,12 +181,10 @@ async def stats(request: Request):
     today_str = str(date.today())
     with _db() as con:
         last_feed = con.execute(
-            f"SELECT created_at FROM baby_events WHERE {sc} AND event_type='feed' ORDER BY created_at DESC LIMIT 1",
-            sp
+            f"SELECT created_at FROM baby_events WHERE {sc} AND event_type='feed' ORDER BY created_at DESC LIMIT 1", sp
         ).fetchone()
         last_diaper = con.execute(
-            f"SELECT created_at FROM baby_events WHERE {sc} AND event_type='diaper' ORDER BY created_at DESC LIMIT 1",
-            sp
+            f"SELECT created_at FROM baby_events WHERE {sc} AND event_type='diaper' ORDER BY created_at DESC LIMIT 1", sp
         ).fetchone()
         feed_count = con.execute(
             f"SELECT COUNT(*) as c FROM baby_events WHERE {sc} AND event_type='feed' AND date(created_at)=?",
@@ -153,7 +194,6 @@ async def stats(request: Request):
             f"SELECT COUNT(*) as c FROM baby_events WHERE {sc} AND event_type='diaper' AND date(created_at)=?",
             (*sp, today_str)
         ).fetchone()["c"]
-        # Sleep: pair sleep_start / sleep_end events today
         sleep_starts = con.execute(
             f"SELECT created_at FROM baby_events WHERE {sc} AND event_type='sleep_start' AND date(created_at)=?",
             (*sp, today_str)
@@ -162,7 +202,6 @@ async def stats(request: Request):
             f"SELECT created_at FROM baby_events WHERE {sc} AND event_type='sleep_end' AND date(created_at)=?",
             (*sp, today_str)
         ).fetchall()
-    # Simple sleep calc: sum each paired start/end
     total_sleep_min = 0
     for i, start_row in enumerate(sleep_starts):
         if i < len(sleep_ends):
@@ -174,9 +213,9 @@ async def stats(request: Request):
                 pass
     return {
         "ok": True,
-        "last_feed": last_feed["created_at"] if last_feed else None,
-        "last_diaper": last_diaper["created_at"] if last_diaper else None,
-        "today_feed_count": feed_count,
-        "today_diaper_count": diaper_count,
+        "last_feed":           last_feed["created_at"] if last_feed else None,
+        "last_diaper":         last_diaper["created_at"] if last_diaper else None,
+        "today_feed_count":    feed_count,
+        "today_diaper_count":  diaper_count,
         "total_sleep_today_min": total_sleep_min,
     }
