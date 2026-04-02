@@ -13,6 +13,53 @@ import uuid
 from collections import defaultdict
 from pathlib import Path
 
+# ── Encrypted leads file ──────────────────────────────────────────────────────
+_LEADS_KEY_FILE  = Path(__file__).parent.parent.parent / "config" / "leads.key"
+_LEADS_DATA_FILE = Path(__file__).parent.parent.parent / "data"   / "leads.enc"
+
+
+def _get_fernet():
+    """Return a Fernet cipher, auto-generating the key on first run."""
+    try:
+        from cryptography.fernet import Fernet
+        if not _LEADS_KEY_FILE.exists():
+            _LEADS_KEY_FILE.parent.mkdir(parents=True, exist_ok=True)
+            _LEADS_KEY_FILE.write_bytes(Fernet.generate_key())
+            _LEADS_KEY_FILE.chmod(0o600)   # owner-read only
+        return Fernet(_LEADS_KEY_FILE.read_bytes())
+    except Exception:
+        return None
+
+
+def _append_lead(first: str, last: str, email: str, ip: str):
+    """Append a new lead entry to the encrypted leads file (one JSON line per entry)."""
+    try:
+        f = _get_fernet()
+        if not f:
+            return
+        import datetime
+        entry = json.dumps({
+            "ts": datetime.datetime.utcnow().isoformat(),
+            "first_name": first,
+            "last_name":  last,
+            "email":      email,
+            "ip":         ip,
+        }, ensure_ascii=False)
+
+        # Read existing plaintext lines (if any)
+        existing = ""
+        if _LEADS_DATA_FILE.exists():
+            try:
+                existing = f.decrypt(_LEADS_DATA_FILE.read_bytes()).decode()
+            except Exception:
+                existing = ""
+
+        updated = (existing.rstrip("\n") + "\n" + entry).lstrip("\n")
+        _LEADS_DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
+        _LEADS_DATA_FILE.write_bytes(f.encrypt(updated.encode()))
+    except Exception:
+        pass
+
 from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel
@@ -421,6 +468,7 @@ async def demo_login(req: DemoLoginRequest, request: Request, response: Response
     log_access(ip, "DEMO_LOGIN_OK",
                first_name=first, last_name=last, email=email,
                session=token[:12])
+    _append_lead(first, last, email, ip)
 
     return {
         "ok":          True,
@@ -428,6 +476,24 @@ async def demo_login(req: DemoLoginRequest, request: Request, response: Response
         "first_name":  first,
         "query_limit": DEMO_QUERY_LIMIT,
     }
+
+
+@router.get("/leads")
+async def get_leads(request: Request):
+    """Admin endpoint — returns decrypted demo leads."""
+    token = request.cookies.get(COOKIE)
+    if get_session_role(token) != "admin":
+        return JSONResponse({"ok": False, "error": "Admin only"}, status_code=403)
+    try:
+        f = _get_fernet()
+        if not f or not _LEADS_DATA_FILE.exists():
+            return {"ok": True, "leads": [], "count": 0}
+        plaintext = f.decrypt(_LEADS_DATA_FILE.read_bytes()).decode()
+        leads = [json.loads(line) for line in plaintext.strip().splitlines() if line.strip()]
+        leads.reverse()   # newest first
+        return {"ok": True, "leads": leads, "count": len(leads)}
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
 
 
 @router.get("/log")

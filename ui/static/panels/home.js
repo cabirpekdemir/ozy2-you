@@ -81,12 +81,31 @@ function init_home(el) {
   _loadEvents();
 }
 
-function _setGreeting() {
-  const now  = new Date();
-  const h    = now.getHours();
-  const name = "Cabir";
-  let greet  = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
-  document.getElementById('home-greeting').textContent = `${greet}, ${name}`;
+async function _setGreeting() {
+  const now   = new Date();
+  const h     = now.getHours();
+  let greet   = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  let name    = '';
+
+  try {
+    const d = await fetch('/api/auth/me').then(r => r.json());
+    if (d.ok) {
+      if (d.is_demo && d.demo_name) {
+        // Demo user — use the name they entered at login
+        name = d.demo_name.split(' ')[0];   // first name only
+      } else {
+        // Admin — use user_name from settings
+        try {
+          const s = await fetch('/api/settings').then(r => r.json());
+          name = s.settings?.user_name || '';
+        } catch {}
+      }
+    }
+  } catch {}
+
+  document.getElementById('home-greeting').textContent = name
+    ? `${greet}, ${name}`
+    : greet;
   document.getElementById('home-date').textContent = now.toLocaleDateString('en-US', {
     weekday:'long', year:'numeric', month:'long', day:'numeric'
   });
