@@ -222,6 +222,8 @@ from api.routers.github_router      import router as github_router
 from api.routers.nutrition_router   import router as nutrition_router
 from api.routers.baby_router        import router as baby_router
 from api.routers.smarthome_router   import router as smarthome_router
+from api.routers.women_router       import router as women_router
+from api.routers.daily_router       import router as daily_router
 
 # Optional routers (may not be present in all editions)
 _optional_routers = []
@@ -264,6 +266,8 @@ for _r in _optional_routers:
 app.include_router(nutrition_router)
 app.include_router(baby_router)
 app.include_router(smarthome_router)
+app.include_router(women_router)
+app.include_router(daily_router)
 
 
 @app.get("/login", response_class=HTMLResponse)

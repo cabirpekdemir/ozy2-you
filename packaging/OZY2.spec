@@ -72,6 +72,8 @@ a = Analysis(
         "api.routers.nutrition_router",
         "api.routers.baby_router",
         "api.routers.smarthome_router",
+        "api.routers.women_router",
+        "api.routers.daily_router",
         # Core
         "core.llm",
         "core.memory",
