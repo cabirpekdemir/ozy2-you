@@ -37,7 +37,7 @@ function init_coffee(el) {
 
       <!-- Download section -->
       <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--r-lg);padding:20px;margin-bottom:20px">
-        <div style="font-size:14px;font-weight:600;margin-bottom:14px">⬇️ Ücretsiz İndir</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px">⬇️ Free Download</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
           ${[
             {emoji:'🍎', label:'macOS', sub:'Apple Silicon + Intel', url:'https://github.com/cabirpekdemir/ozy2-you/releases/latest/download/OZY2-macOS.dmg'},
@@ -54,13 +54,13 @@ function init_coffee(el) {
               <span style="font-size:14px;font-weight:700">${d.label}</span>
               <span style="font-size:11px;color:var(--text-3);margin-top:2px">${d.sub}</span>
               <span style="margin-top:8px;font-size:11px;padding:3px 10px;border-radius:20px;
-                           background:var(--accent,#6366f1);color:#fff">⬇️ İndir</span>
+                           background:var(--accent,#6366f1);color:#fff">⬇️ Download</span>
             </a>`).join('')}
         </div>
         <div style="text-align:center;margin-top:10px">
           <a href="https://buymeacoffee.com/ozy2" target="_blank"
             style="font-size:13px;color:var(--accent,#6366f1);text-decoration:none">
-            ☕ Beğendiysen bir kahve ısmarlayabilirsin →
+            ☕ Enjoying OZY? Buy me a coffee →
           </a>
         </div>
       </div>

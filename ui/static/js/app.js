@@ -311,80 +311,130 @@ function _showOnboarding(isDemo) {
   const box   = document.getElementById('onboarding-box');
   if (!modal || !box) return;
 
-  const STEPS = [
-    { emoji:'👋', q:'What\'s your name?', id:'ob-name', type:'text', placeholder:'Your name' },
-    { emoji:'🎂', q:'How old are you?', id:'ob-age', type:'number', placeholder:'e.g. 28' },
-    { emoji:'🌍', q:'Where are you from?', id:'ob-country', type:'text', placeholder:'e.g. Turkey' },
-    { emoji:'💼', q:'What do you do?', id:'ob-occ', type:'text', placeholder:'e.g. Designer, Student, Doctor…' },
+  // step: -1=AI setup, 0=AI persona (name+avatar), 1-4=personal info, 5=gender, 6=interests, 7=diet
+  const INPUT_STEPS = [
+    { emoji:'✨', q:"What's your name?",            sub:"I'd love to know who I'm talking to!", id:'ob-name',    type:'text',   placeholder:'Your name' },
+    { emoji:'🎂', q:'How old are you?',             sub:'No judgment, I promise 😄',            id:'ob-age',     type:'number', placeholder:'e.g. 28' },
+    { emoji:'🌍', q:'Where in the world are you?',  sub:"I love learning about different places!", id:'ob-country', type:'text', placeholder:'e.g. Turkey, USA…' },
+    { emoji:'💼', q:'What do you do?',              sub:'This helps me give better advice!',    id:'ob-occ',     type:'text',   placeholder:'e.g. Designer, Student, Engineer…' },
   ];
 
-  let step = -1;   // -1 = AI setup step (local vs cloud)
-  const answers = {};
-  let _obAiChoice = '';   // 'local' | 'cloud'
+  const AVATARS = ['🤖','🦊','🦉','🐬','🌟','🦋','🐱','🐺','🌙','🎭','🎨','🍀'];
 
   const genderOptions = ['male','female','other','prefer_not'];
-  const genderLabels  = {male:'👦 Male', female:'👩 Female', other:'🌈 Other', prefer_not:'🤐 Prefer not to say'};
-  let selGender = '';
-
+  const genderLabels  = {male:'👦 Male', female:'👩 Female', other:'🌈 Other', prefer_not:'🤐 Prefer not'};
   const dietGoals = [
-    {k:'lose_weight',e:'⚖️',l:'Lose weight'},{k:'healthy',e:'🥗',l:'Healthy eating'},
-    {k:'maintain',e:'⚡',l:'Maintain'},{k:'gain_muscle',e:'💪',l:'Build muscle'},
+    {k:'lose_weight',e:'⚖️',l:'Lose weight'}, {k:'healthy',e:'🥗',l:'Healthy eating'},
+    {k:'maintain',e:'⚡',l:'Maintain'},        {k:'gain_muscle',e:'💪',l:'Build muscle'},
   ];
-  let selDiet = '';
-
   const interestsList = ['Technology','Science','Music','Sports','Travel','Cooking','Art',
     'Gaming','Finance','Health','Photography','Movies','Nature','History'];
+
+  let step = -1;
+  const answers = {};
+  let _obAiChoice = '';
+  let selGender = '';
+  let selDiet = '';
+  let selAvatar = '🤖';
+  let selAiName = '';
   const selInterests = new Set();
 
-  const TOTAL = STEPS.length + 4; // ai + name/age/country/occ + gender + interests + diet
+  // TOTAL steps for progress bar: ai + persona + inputs + gender + interests + diet
+  const TOTAL = 2 + INPUT_STEPS.length + 3;
+
+  function _pct(current) {
+    const p = Math.round((current / (TOTAL - 1)) * 100);
+    return `<div style="height:3px;background:var(--border,#333);border-radius:2px;margin-bottom:20px">
+      <div style="width:${p}%;height:100%;background:var(--accent,#6366f1);border-radius:2px;transition:width .4s ease"></div>
+    </div>`;
+  }
 
   function render() {
+
+    // ── STEP -1: AI Setup ─────────────────────────────────────────
     if (step === -1) {
-      // ── AI Setup Step ──
       const specs = _detectSystemSpecs();
-      const osLabel = {mac:'macOS 🍎', win:'Windows 🪟', linux:'Linux 🐧'}[specs.os];
-      const ramLabel = specs.ram >= 8 ? `${specs.ram}+ GB RAM` : `${specs.ram} GB RAM`;
       box.innerHTML = `
-        <div style="text-align:center;font-size:3rem;margin-bottom:8px">🤖</div>
-        <h2 style="text-align:center;margin:0 0 6px;font-size:1.2rem">How should OZY's AI run?</h2>
-        <p style="text-align:center;opacity:.5;font-size:.82rem;margin:0 0 20px">Choose once, change anytime in Settings</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        ${_pct(0)}
+        <div style="text-align:center;margin-bottom:18px">
+          <div style="font-size:3.5rem;margin-bottom:8px">👋</div>
+          <h2 style="margin:0 0 6px;font-size:1.3rem;font-weight:800">Hey! I'm OZY.</h2>
+          <p style="margin:0;opacity:.55;font-size:.85rem;line-height:1.5">
+            Your personal AI assistant — always on, always private.<br>Let's get you set up in just a minute!
+          </p>
+        </div>
+        <p style="text-align:center;font-size:.9rem;margin:0 0 14px;font-weight:600">First: how should my brain run?</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
           <button onclick="obAiChoice(this,'local')" data-ai="local"
-            style="padding:20px 12px;border-radius:14px;border:2px solid var(--border,#444);
-                   cursor:pointer;text-align:center;font-size:.9rem;background:transparent;color:inherit;
-                   ${_obAiChoice==='local'?'border-color:var(--accent,#6366f1);background:rgba(99,102,241,.1)':''}">
+            style="padding:20px 12px;border-radius:14px;border:2px solid ${_obAiChoice==='local'?'var(--accent,#6366f1)':'var(--border,#444)'};
+                   cursor:pointer;text-align:center;font-size:.9rem;
+                   background:${_obAiChoice==='local'?'rgba(99,102,241,.1)':'transparent'};color:inherit">
             <div style="font-size:2rem;margin-bottom:6px">🏠</div>
             <div style="font-weight:700;margin-bottom:4px">Local (Ollama)</div>
-            <div style="font-size:.75rem;opacity:.6">Private, offline<br>runs on your device</div>
+            <div style="font-size:.75rem;opacity:.6">100% private<br>runs on your device</div>
           </button>
           <button onclick="obAiChoice(this,'cloud')" data-ai="cloud"
-            style="padding:20px 12px;border-radius:14px;border:2px solid var(--border,#444);
-                   cursor:pointer;text-align:center;font-size:.9rem;background:transparent;color:inherit;
-                   ${_obAiChoice==='cloud'?'border-color:var(--accent,#6366f1);background:rgba(99,102,241,.1)':''}">
+            style="padding:20px 12px;border-radius:14px;border:2px solid ${_obAiChoice==='cloud'?'var(--accent,#6366f1)':'var(--border,#444)'};
+                   cursor:pointer;text-align:center;font-size:.9rem;
+                   background:${_obAiChoice==='cloud'?'rgba(99,102,241,.1)':'transparent'};color:inherit">
             <div style="font-size:2rem;margin-bottom:6px">☁️</div>
             <div style="font-weight:700;margin-bottom:4px">Cloud</div>
             <div style="font-size:.75rem;opacity:.6">OpenAI · Gemini<br>Anthropic (API key)</div>
           </button>
         </div>
-
-        <div id="ob-ai-detail" style="margin-bottom:16px"></div>
-
+        <div id="ob-ai-detail" style="margin-bottom:14px"></div>
         <button onclick="obNext()" style="width:100%;padding:12px;border-radius:12px;border:none;
-          background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem">
-          Continue →
+          background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem;font-weight:600">
+          Let's go! →
         </button>
         <button onclick="obSkip()" style="width:100%;margin-top:8px;background:none;border:none;
-          color:inherit;opacity:.4;cursor:pointer;font-size:.8rem">Skip for now</button>
-        <div style="text-align:center;margin-top:12px;font-size:.75rem;opacity:.3">1 / ${TOTAL}</div>`;
-
-      // Show detail panel if already selected
+          color:inherit;opacity:.35;cursor:pointer;font-size:.8rem">Skip setup for now</button>`;
       if (_obAiChoice) _renderAiDetail(specs);
-    } else if (step < STEPS.length) {
-      const s = STEPS[step];
+
+    // ── STEP 0: AI Persona — name + avatar ────────────────────────
+    } else if (step === 0) {
       box.innerHTML = `
-        ${isDemo ? '<div style="background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.3);border-radius:8px;padding:8px 12px;font-size:.78rem;color:#eab308;margin-bottom:16px">⚠️ Demo mode — do not enter real personal information.</div>' : ''}
-        <div style="text-align:center;font-size:3rem;margin-bottom:12px">${s.emoji}</div>
-        <h2 style="text-align:center;margin:0 0 20px;font-size:1.2rem">${s.q}</h2>
+        ${_pct(1)}
+        <div style="text-align:center;margin-bottom:18px">
+          <div id="ob-avatar-preview" style="font-size:4rem;margin-bottom:8px;cursor:default">${selAvatar}</div>
+          <h2 style="margin:0 0 6px;font-size:1.2rem;font-weight:800">Would you like to give me a name?</h2>
+          <p style="margin:0;opacity:.5;font-size:.83rem">Totally optional — I'll stay "OZY" if you skip 😊</p>
+        </div>
+        <input id="ob-ai-name" type="text" placeholder='e.g. Max, Luna, Aria… or just leave blank'
+          value="${selAiName}"
+          style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--border,#444);
+                 background:transparent;color:inherit;font-size:1rem;box-sizing:border-box;
+                 text-align:center;margin-bottom:16px"
+          onkeydown="if(event.key==='Enter') document.getElementById('ob-next').click()">
+        <div style="font-size:.82rem;opacity:.5;margin-bottom:10px;text-align:center">Pick my avatar:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:20px">
+          ${AVATARS.map(a=>`
+            <button onclick="obPickAvatar('${a}')" data-av="${a}"
+              style="font-size:1.8rem;padding:8px;border-radius:12px;line-height:1;
+                     border:2px solid ${selAvatar===a?'var(--accent,#6366f1)':'var(--border,#444)'};
+                     cursor:pointer;background:${selAvatar===a?'rgba(99,102,241,.12)':'transparent'};
+                     transition:all .15s">${a}</button>`).join('')}
+        </div>
+        <button id="ob-next" onclick="obNext()" style="width:100%;padding:12px;border-radius:12px;border:none;
+          background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem;font-weight:600">
+          Nice to meet you! →
+        </button>
+        <button onclick="obBack()" style="width:100%;margin-top:8px;background:none;border:none;
+          color:inherit;opacity:.35;cursor:pointer;font-size:.8rem">← Back</button>`;
+      setTimeout(() => document.getElementById('ob-ai-name')?.focus(), 100);
+
+    // ── STEPS 1-4: Personal info ──────────────────────────────────
+    } else if (step >= 1 && step <= INPUT_STEPS.length) {
+      const s = INPUT_STEPS[step - 1];
+      const aiLabel = selAiName || 'OZY';
+      box.innerHTML = `
+        ${_pct(step + 1)}
+        ${isDemo ? '<div style="background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.3);border-radius:8px;padding:8px 12px;font-size:.78rem;color:#eab308;margin-bottom:14px">⚠️ Demo mode — do not enter real personal info.</div>' : ''}
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="font-size:3rem;margin-bottom:10px">${s.emoji}</div>
+          <h2 style="margin:0 0 6px;font-size:1.2rem;font-weight:800">${s.q}</h2>
+          <p style="margin:0;opacity:.5;font-size:.82rem">${s.sub}</p>
+        </div>
         <input id="${s.id}" type="${s.type}" placeholder="${s.placeholder}"
           value="${answers[s.id]||''}"
           style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--border,#444);
@@ -392,18 +442,23 @@ function _showOnboarding(isDemo) {
           onkeydown="if(event.key==='Enter') document.getElementById('ob-next').click()">
         <div style="display:flex;gap:8px;margin-top:16px">
           <button onclick="obBack()" style="flex:1;padding:11px;border-radius:12px;border:1px solid var(--border,#444);background:transparent;cursor:pointer;color:inherit">← Back</button>
-          <button id="ob-next" onclick="obNext()" style="flex:2;padding:11px;border-radius:12px;border:none;background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem">
-            ${step < STEPS.length-1 ? 'Next →' : 'Continue →'}
+          <button id="ob-next" onclick="obNext()" style="flex:2;padding:11px;border-radius:12px;border:none;background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem;font-weight:600">
+            ${step < INPUT_STEPS.length ? 'Next →' : 'Continue →'}
           </button>
         </div>
-        <button onclick="obSkip()" style="width:100%;margin-top:10px;background:none;border:none;color:inherit;opacity:.4;cursor:pointer;font-size:.82rem">Skip for now</button>
-        <div style="text-align:center;margin-top:12px;font-size:.75rem;opacity:.3">${step+2} / ${TOTAL}</div>`;
+        <button onclick="obSkip()" style="width:100%;margin-top:10px;background:none;border:none;color:inherit;opacity:.35;cursor:pointer;font-size:.82rem">Skip for now</button>`;
       setTimeout(() => document.getElementById(s.id)?.focus(), 100);
-    } else if (step === STEPS.length) {
-      // Gender
+
+    // ── STEP gender ───────────────────────────────────────────────
+    } else if (step === INPUT_STEPS.length + 1) {
+      const firstName = (answers['ob-name'] || '').split(' ')[0];
       box.innerHTML = `
-        <div style="text-align:center;font-size:3rem;margin-bottom:12px">🧬</div>
-        <h2 style="text-align:center;margin:0 0 20px;font-size:1.2rem">What's your gender?</h2>
+        ${_pct(INPUT_STEPS.length + 2)}
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="font-size:3rem;margin-bottom:10px">🧬</div>
+          <h2 style="margin:0 0 6px;font-size:1.2rem;font-weight:800">What's your gender${firstName ? ', '+firstName : ''}?</h2>
+          <p style="margin:0;opacity:.5;font-size:.82rem">Helps me personalize certain features for you</p>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           ${genderOptions.map(g=>`
             <button onclick="obGender(this,'${g}')" data-g="${g}"
@@ -412,14 +467,18 @@ function _showOnboarding(isDemo) {
               ${genderLabels[g]}
             </button>`).join('')}
         </div>
-        <button id="ob-next" onclick="obNext()" style="width:100%;margin-top:16px;padding:12px;border-radius:12px;border:none;background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem">Continue →</button>
-        <div style="text-align:center;margin-top:12px;font-size:.75rem;opacity:.3">${step+2} / ${TOTAL}</div>`;
-    } else if (step === STEPS.length+1) {
-      // Interests
+        <button id="ob-next" onclick="obNext()" style="width:100%;margin-top:16px;padding:12px;border-radius:12px;border:none;background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem;font-weight:600">Continue →</button>
+        <button onclick="obBack()" style="width:100%;margin-top:8px;background:none;border:none;color:inherit;opacity:.35;cursor:pointer;font-size:.8rem">← Back</button>`;
+
+    // ── STEP interests ────────────────────────────────────────────
+    } else if (step === INPUT_STEPS.length + 2) {
       box.innerHTML = `
-        <div style="text-align:center;font-size:3rem;margin-bottom:12px">⭐</div>
-        <h2 style="text-align:center;margin:0 0 6px;font-size:1.2rem">What are you into?</h2>
-        <p style="text-align:center;opacity:.5;font-size:.85rem;margin:0 0 16px">Pick anything that fits</p>
+        ${_pct(INPUT_STEPS.length + 3)}
+        <div style="text-align:center;margin-bottom:16px">
+          <div style="font-size:3rem;margin-bottom:10px">⭐</div>
+          <h2 style="margin:0 0 6px;font-size:1.2rem;font-weight:800">What are you into?</h2>
+          <p style="margin:0;opacity:.5;font-size:.82rem">Pick anything that fits — I'll tailor my suggestions!</p>
+        </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px">
           ${interestsList.map(i=>`
             <button onclick="obToggleInt(this,'${i}')"
@@ -428,14 +487,19 @@ function _showOnboarding(isDemo) {
               ${i}
             </button>`).join('')}
         </div>
-        <button onclick="obNext()" style="width:100%;padding:12px;border-radius:12px;border:none;background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem">Continue →</button>
-        <div style="text-align:center;margin-top:12px;font-size:.75rem;opacity:.3">${step+2} / ${TOTAL}</div>`;
-    } else if (step === STEPS.length+2) {
-      // Diet goal
+        <button onclick="obNext()" style="width:100%;padding:12px;border-radius:12px;border:none;background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem;font-weight:600">Continue →</button>
+        <button onclick="obBack()" style="width:100%;margin-top:8px;background:none;border:none;color:inherit;opacity:.35;cursor:pointer;font-size:.8rem">← Back</button>`;
+
+    // ── STEP diet + Finish ────────────────────────────────────────
+    } else if (step === INPUT_STEPS.length + 3) {
+      const aiLabel = selAiName || 'OZY';
       box.innerHTML = `
-        <div style="text-align:center;font-size:3rem;margin-bottom:12px">🥗</div>
-        <h2 style="text-align:center;margin:0 0 6px;font-size:1.2rem">What's your food goal?</h2>
-        <p style="text-align:center;opacity:.5;font-size:.85rem;margin:0 0 16px">OZY will personalize recipes and tips</p>
+        ${_pct(TOTAL - 1)}
+        <div style="text-align:center;margin-bottom:16px">
+          <div style="font-size:3rem;margin-bottom:10px">🥗</div>
+          <h2 style="margin:0 0 6px;font-size:1.2rem;font-weight:800">Last one! What's your food goal?</h2>
+          <p style="margin:0;opacity:.5;font-size:.82rem">${aiLabel} will personalize recipes and nutrition tips</p>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
           ${dietGoals.map(d=>`
             <button onclick="obDiet(this,'${d.k}')" data-d="${d.k}"
@@ -444,7 +508,8 @@ function _showOnboarding(isDemo) {
               <div style="font-size:1.6rem;margin-bottom:4px">${d.e}</div>${d.l}
             </button>`).join('')}
         </div>
-        <button onclick="obFinish()" style="width:100%;padding:12px;border-radius:12px;border:none;background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem">🎉 Let's go!</button>`;
+        <button onclick="obFinish()" style="width:100%;padding:12px;border-radius:12px;border:none;background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem;font-weight:600">🎉 All done — let's start!</button>
+        <button onclick="obBack()" style="width:100%;margin-top:8px;background:none;border:none;color:inherit;opacity:.35;cursor:pointer;font-size:.8rem">← Back</button>`;
     }
   }
 
@@ -460,7 +525,7 @@ function _showOnboarding(isDemo) {
             • <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent,#6366f1)">Google Gemini</a> (free tier available)<br>
             • <a href="https://platform.openai.com/api-keys" target="_blank" style="color:var(--accent,#6366f1)">OpenAI</a><br>
             • <a href="https://console.anthropic.com/" target="_blank" style="color:var(--accent,#6366f1)">Anthropic</a><br>
-            Enter it in Settings → AI after setup.
+            Add it in Settings → AI after setup.
           </div>
         </div>`;
     } else if (_obAiChoice === 'local') {
@@ -468,8 +533,8 @@ function _showOnboarding(isDemo) {
       detail.innerHTML = `
         <div style="background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);border-radius:12px;padding:14px;font-size:.83rem">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <div style="font-weight:600">🏠 Local setup · ${osLabel}</div>
-            <span style="font-size:.75rem;opacity:.5">${specs.ram >= 8 ? specs.ram+'+' : specs.ram} GB RAM · ${specs.cores} cores</span>
+            <div style="font-weight:600">🏠 Local · ${osLabel}</div>
+            <span style="font-size:.75rem;opacity:.5">${specs.ram >= 8 ? specs.ram+'+' : specs.ram} GB · ${specs.cores} cores</span>
           </div>
           <div style="margin-bottom:10px">
             <div style="opacity:.6;margin-bottom:4px">Recommended model:</div>
@@ -511,23 +576,33 @@ function _showOnboarding(isDemo) {
     _renderAiDetail(_detectSystemSpecs());
   };
 
+  window.obPickAvatar = function(a) {
+    selAvatar = a;
+    document.querySelectorAll('[data-av]').forEach(b => {
+      const active = b.dataset.av === a;
+      b.style.borderColor = active ? 'var(--accent,#6366f1)' : 'var(--border,#444)';
+      b.style.background  = active ? 'rgba(99,102,241,.12)' : 'transparent';
+    });
+    const prev = document.getElementById('ob-avatar-preview');
+    if (prev) prev.textContent = a;
+  };
+
   window.obCheckOllama = async function(model) {
     const btn = document.getElementById('ob-ollama-check');
     const status = document.getElementById('ob-ollama-status');
     if (btn) btn.textContent = '⏳ Checking…';
     const running = await _checkOllamaRunning();
     if (running) {
-      if (status) status.innerHTML = `<span style="color:#22c55e">✅ Ollama is running! OZY will be configured to use <strong>${model}</strong></span>`;
+      if (status) status.innerHTML = `<span style="color:#22c55e">✅ Ollama is running! OZY will use <strong>${model}</strong></span>`;
       if (btn) { btn.textContent = '✓ Connected'; btn.style.borderColor='#22c55e'; btn.style.color='#22c55e'; }
     } else {
-      if (status) status.innerHTML = `<span style="color:#f59e0b">⚠️ Ollama not detected. Install it first, then click Check again.</span>`;
+      if (status) status.innerHTML = `<span style="color:#f59e0b">⚠️ Ollama not found. Install it first, then click Check again.</span>`;
       if (btn) btn.textContent = '🔍 Check again';
     }
   };
 
   window.obNext = function() {
     if (step === -1) {
-      // Save AI choice if local
       if (_obAiChoice === 'local') {
         const specs = _detectSystemSpecs();
         fetch('/api/settings', {
@@ -537,45 +612,61 @@ function _showOnboarding(isDemo) {
       }
       step = 0; render(); return;
     }
-    if (step < STEPS.length) {
-      const s = STEPS[step];
+    if (step === 0) {
+      selAiName = document.getElementById('ob-ai-name')?.value.trim() || '';
+      step = 1; render(); return;
+    }
+    if (step >= 1 && step <= INPUT_STEPS.length) {
+      const s = INPUT_STEPS[step - 1];
       answers[s.id] = document.getElementById(s.id)?.value.trim() || '';
     }
     step++;
     render();
   };
+
   window.obBack = function() {
-    if (step === 0) { step = -1; } else { step--; }
+    if (step === 0) { step = -1; }
+    else { step--; }
     render();
   };
+
   window.obSkip = function() { modal.style.display = 'none'; };
+
   window.obGender = function(btn, g) {
     selGender = g;
     document.querySelectorAll('[data-g]').forEach(b => {
       const a = b.dataset.g === g;
-      b.style.background = a ? 'var(--accent,#6366f1)' : 'transparent';
-      b.style.color      = a ? '#fff' : 'inherit';
+      b.style.background  = a ? 'var(--accent,#6366f1)' : 'transparent';
+      b.style.color       = a ? '#fff' : 'inherit';
       b.style.borderColor = a ? 'transparent' : 'var(--border,#444)';
     });
   };
+
   window.obToggleInt = function(btn, i) {
-    if (selInterests.has(i)) { selInterests.delete(i); btn.style.background='transparent'; btn.style.color='inherit'; btn.style.borderColor='var(--border,#444)'; }
-    else { selInterests.add(i); btn.style.background='var(--accent,#6366f1)'; btn.style.color='#fff'; btn.style.borderColor='transparent'; }
+    if (selInterests.has(i)) {
+      selInterests.delete(i);
+      btn.style.background = 'transparent'; btn.style.color = 'inherit'; btn.style.borderColor = 'var(--border,#444)';
+    } else {
+      selInterests.add(i);
+      btn.style.background = 'var(--accent,#6366f1)'; btn.style.color = '#fff'; btn.style.borderColor = 'transparent';
+    }
   };
+
   window.obDiet = function(btn, d) {
     selDiet = d;
     document.querySelectorAll('[data-d]').forEach(b => {
       const a = b.dataset.d === d;
-      b.style.background = a ? 'var(--accent,#6366f1)' : 'transparent';
-      b.style.color      = a ? '#fff' : 'inherit';
+      b.style.background  = a ? 'var(--accent,#6366f1)' : 'transparent';
+      b.style.color       = a ? '#fff' : 'inherit';
       b.style.borderColor = a ? 'transparent' : 'var(--border,#444)';
     });
   };
+
   window.obFinish = async function() {
     const payload = {
       name:         answers['ob-name']   || '',
       age:          parseInt(answers['ob-age']) || null,
-      country:      answers['ob-country']|| '',
+      country:      answers['ob-country'] || '',
       occupation:   answers['ob-occ']    || '',
       gender:       selGender,
       dietary_goal: selDiet,
@@ -587,10 +678,15 @@ function _showOnboarding(isDemo) {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify(payload),
     });
-    if (payload.name) {
+    // Save name to settings + AI persona (name, avatar)
+    const settingsPayload = {};
+    if (payload.name) settingsPayload.user_name = payload.name;
+    if (selAiName)    settingsPayload.ai_name   = selAiName;
+    if (selAvatar)    settingsPayload.ai_avatar  = selAvatar;
+    if (Object.keys(settingsPayload).length) {
       await fetch('/api/settings', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({user_name: payload.name}),
+        body: JSON.stringify(settingsPayload),
       }).catch(()=>{});
     }
     // Apply gender nav
@@ -598,6 +694,10 @@ function _showOnboarding(isDemo) {
       el.style.display = selGender === 'female' ? '' : 'none';
     });
     modal.style.display = 'none';
+    // Show a warm welcome toast
+    const aiLabel = selAiName || 'OZY';
+    const userName = payload.name ? `, ${payload.name.split(' ')[0]}` : '';
+    toast(`${selAvatar} Hey${userName}! I'm ${aiLabel} — so happy you're here! 🎉`, 'success', 4000);
   };
 
   modal.style.display = 'flex';
