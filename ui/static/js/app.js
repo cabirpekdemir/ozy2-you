@@ -694,10 +694,69 @@ function _showOnboarding(isDemo) {
       el.style.display = selGender === 'female' ? '' : 'none';
     });
     modal.style.display = 'none';
-    // Show a warm welcome toast
-    const aiLabel = selAiName || 'OZY';
-    const userName = payload.name ? `, ${payload.name.split(' ')[0]}` : '';
+
+    // ── Welcome toast ─────────────────────────────────────────────
+    const aiLabel  = selAiName || 'OZY';
+    const firstName = payload.name ? payload.name.split(' ')[0] : '';
+    const userName  = firstName ? `, ${firstName}` : '';
     toast(`${selAvatar} Hey${userName}! I'm ${aiLabel} — so happy you're here! 🎉`, 'success', 4000);
+
+    // ── Welcome speech (TTS) ──────────────────────────────────────
+    // Build greeting in the app's current language
+    const lang = (typeof I18N !== 'undefined' ? I18N.lang : null)
+              || navigator.language?.slice(0, 2)
+              || 'en';
+    const _greetings = {
+      tr: firstName
+        ? `Merhaba ${firstName}! Ben ${aiLabel}. Seninle tanışmak gerçekten çok güzel. Seni zaten çok sevdim — ne zaman ihtiyacın olursa buradayım!`
+        : `Merhaba! Ben ${aiLabel}, senin kişisel yapay zeka asistanınım. Seninle tanışmak harika — ne zaman ihtiyacın olursa buradayım!`,
+      en: firstName
+        ? `Hey ${firstName}! I'm ${aiLabel}, your personal AI assistant. I'm so excited to meet you! I'm here whenever you need me — let's do great things together!`
+        : `Hey there! I'm ${aiLabel}, your personal AI assistant. It's so great to meet you! I'm here whenever you need me!`,
+      de: firstName
+        ? `Hallo ${firstName}! Ich bin ${aiLabel}, dein persönlicher KI-Assistent. Es ist wunderbar, dich kennenzulernen! Ich bin immer für dich da!`
+        : `Hallo! Ich bin ${aiLabel}, dein persönlicher KI-Assistent. Schön, dich kennenzulernen!`,
+      fr: firstName
+        ? `Bonjour ${firstName}! Je suis ${aiLabel}, ton assistant IA personnel. Ravi de te rencontrer — je suis là quand tu as besoin de moi!`
+        : `Bonjour! Je suis ${aiLabel}, ton assistant IA personnel. Enchanté de te rencontrer!`,
+      es: firstName
+        ? `Hola ${firstName}! Soy ${aiLabel}, tu asistente de inteligencia artificial. Es genial conocerte — aquí estaré siempre que me necesites!`
+        : `Hola! Soy ${aiLabel}, tu asistente de inteligencia artificial. Es un placer conocerte!`,
+      pt: firstName
+        ? `Olá ${firstName}! Eu sou ${aiLabel}, o seu assistente pessoal de inteligência artificial. É muito bom te conhecer — estarei aqui sempre que precisar!`
+        : `Olá! Eu sou ${aiLabel}, o seu assistente de IA pessoal. Prazer em te conhecer!`,
+      it: firstName
+        ? `Ciao ${firstName}! Sono ${aiLabel}, il tuo assistente personale di intelligenza artificiale. È un piacere conoscerti — sono qui ogni volta che hai bisogno!`
+        : `Ciao! Sono ${aiLabel}, il tuo assistente personale di IA. Piacere di conoscerti!`,
+      ja: firstName
+        ? `こんにちは、${firstName}さん！私は${aiLabel}、あなたのパーソナルAIアシスタントです。出会えてとても嬉しいです！いつでもお気軽にどうぞ！`
+        : `こんにちは！私は${aiLabel}、あなたのパーソナルAIアシスタントです。よろしくお願いします！`,
+      zh: firstName
+        ? `你好，${firstName}！我是${aiLabel}，你的个人AI助手。很高兴认识你！随时都可以来找我！`
+        : `你好！我是${aiLabel}，你的个人AI助手。很高兴认识你！`,
+      ar: firstName
+        ? `مرحباً ${firstName}! أنا ${aiLabel}، مساعدك الذكي الشخصي. يسعدني التعرف عليك — أنا هنا كلما احتجتني!`
+        : `مرحباً! أنا ${aiLabel}، مساعدك الذكي الشخصي. يسعدني التعرف عليك!`,
+    };
+    const speechText = _greetings[lang] || _greetings['en'];
+
+    // Call TTS — non-blocking, silently skip if TTS is off or unavailable
+    (async () => {
+      try {
+        const r = await fetch('/api/tts/speak', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ text: speechText }),
+        });
+        if (!r.ok) return;
+        const blob = await r.blob();
+        if (!blob.size) return;
+        const url  = URL.createObjectURL(blob);
+        const aud  = new Audio(url);
+        aud.play().catch(() => {});
+        aud.onended = () => URL.revokeObjectURL(url);
+      } catch(_e) { /* TTS unavailable — skip silently */ }
+    })();
   };
 
   modal.style.display = 'flex';
