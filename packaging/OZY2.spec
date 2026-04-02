@@ -48,6 +48,7 @@ a = Analysis(
         # API routers
         "api.app",
         "api.state",
+        "api.routers.auth_router",
         "api.routers.chat",
         "api.routers.settings",
         "api.routers.i18n",
@@ -59,6 +60,18 @@ a = Analysis(
         "api.routers.telegram_router",
         "api.routers.briefing_router",
         "api.routers.setup_router",
+        "api.routers.notes_router",
+        "api.routers.reminders_router",
+        "api.routers.books_router",
+        "api.routers.health_router",
+        "api.routers.tts_router",
+        "api.routers.roles_router",
+        "api.routers.marketplace_router",
+        "api.routers.packages_router",
+        "api.routers.github_router",
+        "api.routers.nutrition_router",
+        "api.routers.baby_router",
+        "api.routers.smarthome_router",
         # Core
         "core.llm",
         "core.memory",
@@ -74,8 +87,13 @@ a = Analysis(
         # Skills
         "skills.tools_register",
         "skills.you_skills",
-        "skills.pro_skills",
-        "skills.social_skills",
+        # cryptography — Fernet encrypted leads file
+        "cryptography",
+        "cryptography.fernet",
+        "cryptography.hazmat.primitives",
+        "cryptography.hazmat.backends",
+        # httpx — smart home webhooks
+        "httpx",
         # AI providers
         "google.genai",
         "openai",
@@ -158,8 +176,8 @@ if sys.platform == "darwin":
         info_plist={
             "CFBundleName":               "OZY2",
             "CFBundleDisplayName":        "OZY2",
-            "CFBundleVersion":            "2.0.0",
-            "CFBundleShortVersionString": "2.0.0",
+            "CFBundleVersion":            "2.1.0",
+            "CFBundleShortVersionString": "2.1.0",
             "CFBundleIdentifier":         "com.ozy2.app",
             "LSMinimumSystemVersion":     "12.0",
             "NSHighResolutionCapable":    True,

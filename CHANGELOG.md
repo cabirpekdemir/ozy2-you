@@ -5,6 +5,38 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [v2.1.0] — 2026-04-02
+
+### ✨ New Features
+
+#### 5 New You-Tier Panels
+- **🥗 Nutrition Tracker** — Log meals (breakfast/lunch/dinner/snack) with calorie totals, water intake, and AI-powered recipe chat
+- **👶 Baby Tracker** — Track feeds, sleep, diapers, weight, vaccines with stats dashboard and time-ago feed
+- **🖼️ Photos** — Local photo album using File System Access API; grid view, lightbox, keyboard navigation, no cloud upload
+- **🏠 Smart Home** — Webhook-based device control (Shelly, Tasmota, Home Assistant, ESPHome); toggle on/off from any browser
+- **☕ Support OZY** — Buy Me a Coffee tiers, GitHub star, share link, feedback email
+
+#### Multi-User Demo Mode
+- Session isolation via `session_id UUID` per demo visitor across all SQLite tables
+- Demo login: name + email only (no password)
+- Auto-cleanup on logout / 5-minute idle timeout
+- Encrypted leads file (`data/leads.enc`) with Fernet — key at `config/leads.key` (chmod 600)
+- Admin-only **👥 Visitors** panel showing demo sign-ups with search and email copy
+
+#### Performance — Token Optimization (~80% reduction)
+- **Smart tool filter**: keyword-based category matching sends only relevant tools per message (76 tools → 5-8 per request; ~7,000 → ~400-700 tokens)
+- **Auto-summary every 5 exchanges**: conversation compressed by LLM, stored in DB, old messages trimmed — non-blocking (`asyncio.create_task`)
+- **Rolling context**: last 8 full messages + inline snippet of older turns
+- **Compact system prompt**: conciseness directive added, security block condensed
+
+### 🔧 Fixes
+- Demo login (`/api/auth/demo_login`) blocked by AuthMiddleware — all `/api/auth/*` routes now public
+- Home panel greeting hardcoded "Cabir" — now fetches `/api/auth/me` (demo users see their name; admins see `user_name` from settings)
+- Admin-tier nav items (Visitors) hidden by package filter — `data-tier="admin"` items now bypass `_applyPackageFilter()`
+- Optional routers (youtube, stocks) wrapped in `try/except` for import safety on ozy2-you edition
+
+---
+
 ## [v2.0.0] — 2026-03-26
 
 ### 🎉 Initial public release
