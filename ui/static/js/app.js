@@ -769,18 +769,40 @@ let _cameraCallback = null;
 
 async function cameraOpen(callback) {
   _cameraCallback = callback;
-  try {
-    _cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-    const video = document.getElementById('camera-video');
-    video.srcObject = _cameraStream;
-    document.getElementById('camera-modal').style.display = 'flex';
-  } catch(e) {
-    // Fallback: file picker
-    const inp = document.createElement('input');
-    inp.type = 'file'; inp.accept = 'image/*'; inp.capture = 'environment';
-    inp.onchange = () => { if (inp.files[0] && callback) callback(inp.files[0], null); };
-    inp.click();
+
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const hasGUM   = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+
+  // Desktop with getUserMedia: show in-browser camera modal
+  if (!isMobile && hasGUM) {
+    try {
+      _cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: false,
+      });
+      const video = document.getElementById('camera-video');
+      video.srcObject = _cameraStream;
+      document.getElementById('camera-modal').style.display = 'flex';
+      return;
+    } catch(_e) {
+      // Permission denied or no camera — fall through to file input
+    }
   }
+
+  // Mobile (or desktop fallback): native camera via <input capture>
+  // This opens the system camera app directly on iOS/Android
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'image/*';
+  inp.setAttribute('capture', 'environment'); // must use setAttribute for iOS
+  inp.style.cssText = 'position:fixed;top:-999px;opacity:0';
+  document.body.appendChild(inp);
+  inp.onchange = () => {
+    const file = inp.files?.[0];
+    document.body.removeChild(inp);
+    if (file && callback) compressFileToBase64(file, callback);
+  };
+  inp.click();
 }
 
 function cameraCapture() {
