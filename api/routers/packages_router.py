@@ -30,6 +30,7 @@ TIERS: dict = {
             "gmail", "calendar", "telegram",
             "skills", "marketplace",
             "drive", "github", "youtube", "lesson", "plans", "stocks",
+            "nutrition", "baby", "photos", "smarthome", "coffee",
         ],
     },
     "professional": {
