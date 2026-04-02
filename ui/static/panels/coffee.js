@@ -17,9 +17,9 @@ function init_coffee(el) {
       <!-- Tiers -->
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:32px">
         ${[
-          {emoji:'☕', label:'One Coffee', amount:'$3', note:'Keep the caffeine flowing', url:'https://buymeacoffee.com/cabirpekdemir'},
-          {emoji:'☕☕', label:'Double Shot', amount:'$6', note:'Extra energy = more features!', url:'https://buymeacoffee.com/cabirpekdemir'},
-          {emoji:'🫶', label:'Big Thanks', amount:'$12', note:'You\'re amazing, thank you!', url:'https://buymeacoffee.com/cabirpekdemir'},
+          {emoji:'☕', label:'One Coffee', amount:'$3', note:'Keep the caffeine flowing', url:'https://buymeacoffee.com/ozy2'},
+          {emoji:'☕☕', label:'Double Shot', amount:'$6', note:'Extra energy = more features!', url:'https://buymeacoffee.com/ozy2'},
+          {emoji:'🫶', label:'Big Thanks', amount:'$12', note:'You\'re amazing, thank you!', url:'https://buymeacoffee.com/ozy2'},
         ].map(t => `
           <a href="${t.url}" target="_blank" rel="noopener"
             style="display:block;text-decoration:none;background:var(--card-bg);
