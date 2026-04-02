@@ -35,6 +35,36 @@ function init_coffee(el) {
           </a>`).join('')}
       </div>
 
+      <!-- Download section -->
+      <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--r-lg);padding:20px;margin-bottom:20px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px">⬇️ Ücretsiz İndir</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
+          ${[
+            {emoji:'🍎', label:'macOS', sub:'Apple Silicon + Intel', url:'https://github.com/cabirpekdemir/ozy2-you/releases/latest/download/OZY2-macOS.dmg'},
+            {emoji:'🪟', label:'Windows', sub:'Windows 10/11', url:'https://github.com/cabirpekdemir/ozy2-you/releases/latest/download/OZY2-Windows.exe'},
+            {emoji:'🐧', label:'Linux', sub:'AppImage / tar.gz', url:'https://github.com/cabirpekdemir/ozy2-you/releases/latest/download/OZY2-Linux.tar.gz'},
+          ].map(d => `
+            <a href="${d.url}" target="_blank" rel="noopener"
+              style="display:flex;flex-direction:column;align-items:center;text-align:center;
+                     text-decoration:none;padding:16px 10px;border:1px solid var(--card-border);
+                     border-radius:12px;color:var(--text-1);transition:all .15s;background:transparent"
+              onmouseover="this.style.borderColor='var(--accent)';this.style.background='var(--accent-10,rgba(99,102,241,.08))'"
+              onmouseout="this.style.borderColor='var(--card-border)';this.style.background='transparent'">
+              <span style="font-size:28px;margin-bottom:6px">${d.emoji}</span>
+              <span style="font-size:14px;font-weight:700">${d.label}</span>
+              <span style="font-size:11px;color:var(--text-3);margin-top:2px">${d.sub}</span>
+              <span style="margin-top:8px;font-size:11px;padding:3px 10px;border-radius:20px;
+                           background:var(--accent,#6366f1);color:#fff">⬇️ İndir</span>
+            </a>`).join('')}
+        </div>
+        <div style="text-align:center;margin-top:10px">
+          <a href="https://buymeacoffee.com/ozy2" target="_blank"
+            style="font-size:13px;color:var(--accent,#6366f1);text-decoration:none">
+            ☕ Beğendiysen bir kahve ısmarlayabilirsin →
+          </a>
+        </div>
+      </div>
+
       <!-- Other ways to support -->
       <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--r-lg);padding:20px;margin-bottom:20px">
         <div style="font-size:14px;font-weight:600;margin-bottom:14px">Other ways to support 🙏</div>

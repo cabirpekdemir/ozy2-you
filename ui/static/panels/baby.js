@@ -89,12 +89,19 @@ function init_baby(el) {
                    padding:8px 12px;color:var(--text-1);font-size:13px;outline:none"
             onkeydown="if(event.key==='Enter') babySubmitLog()">
           <!-- Photo attach -->
-          <div style="display:flex;align-items:center;gap:8px">
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;
                           background:var(--bg-base,#0e1018);border:1px dashed var(--card-border);
-                          border-radius:8px;padding:7px 12px;font-size:12px;color:var(--text-3)">
-              📷 Add photo
+                          border-radius:8px;padding:7px 11px;font-size:12px;color:var(--text-3)">
+              📷 Kamera
               <input type="file" accept="image/*" capture="environment" id="baby-photo-input"
+                style="display:none" onchange="babyPhotoSelected(this)">
+            </label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;
+                          background:var(--bg-base,#0e1018);border:1px dashed var(--card-border);
+                          border-radius:8px;padding:7px 11px;font-size:12px;color:var(--text-3)">
+              🖼️ Galeri
+              <input type="file" accept="image/*" id="baby-photo-input-gallery"
                 style="display:none" onchange="babyPhotoSelected(this)">
             </label>
             <div id="baby-photo-preview" style="display:none">

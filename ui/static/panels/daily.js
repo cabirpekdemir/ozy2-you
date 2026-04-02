@@ -130,22 +130,45 @@ async function diarySelectDay(dateStr) {
     </div>
 
     <!-- Photo area -->
-    <div id="diary-photo-wrap" style="margin-bottom:14px;text-align:center">
+    <div id="diary-photo-wrap" style="margin-bottom:14px">
       ${entry?.photo_data
         ? `<img src="${entry.photo_data}" onclick="diaryOpenLightbox('${entry.photo_data}')"
-             style="max-width:100%;max-height:220px;border-radius:10px;cursor:pointer;object-fit:cover">`
-        : `<div id="diary-photo-placeholder" style="border:2px dashed var(--border,#333);border-radius:10px;
-             padding:24px;cursor:pointer" onclick="document.getElementById('diary-file-input').click()">
-             <div style="font-size:2rem">📷</div>
-             <div style="font-size:.85rem;opacity:.6;margin-top:4px">Fotoğraf ekle</div>
+             style="max-width:100%;max-height:220px;border-radius:10px;cursor:pointer;object-fit:cover;display:block;margin:0 auto">`
+        : `<div style="border:2px dashed var(--border,#333);border-radius:10px;padding:18px;text-align:center">
+             <div style="font-size:2rem;margin-bottom:10px">📷</div>
+             <div style="display:flex;justify-content:center;gap:8px">
+               <label style="cursor:pointer;padding:7px 14px;border-radius:20px;
+                             border:1px solid var(--border,#444);font-size:.82rem;
+                             background:var(--card-bg,transparent)">
+                 📷 Kamera
+                 <input type="file" accept="image/*" capture="environment"
+                   style="display:none" onchange="diaryPhotoSelected(this)">
+               </label>
+               <label style="cursor:pointer;padding:7px 14px;border-radius:20px;
+                             border:1px solid var(--border,#444);font-size:.82rem;
+                             background:var(--card-bg,transparent)">
+                 🖼️ Galeri
+                 <input type="file" accept="image/*"
+                   style="display:none" onchange="diaryPhotoSelected(this)">
+               </label>
+             </div>
            </div>`
       }
-      <input id="diary-file-input" type="file" accept="image/*" capture="environment"
-        style="display:none" onchange="diaryPhotoSelected(this)">
       ${entry?.photo_data
-        ? `<button onclick="document.getElementById('diary-file-input').click()"
-             style="margin-top:8px;font-size:.8rem;opacity:.6;background:none;border:none;cursor:pointer">
-             📷 Fotoğrafı değiştir</button>`
+        ? `<div style="display:flex;justify-content:center;gap:8px;margin-top:8px">
+             <label style="cursor:pointer;font-size:.8rem;opacity:.6;padding:4px 12px;
+                           border-radius:16px;border:1px solid var(--border,#444)">
+               📷 Kamera
+               <input type="file" accept="image/*" capture="environment"
+                 style="display:none" onchange="diaryPhotoSelected(this)">
+             </label>
+             <label style="cursor:pointer;font-size:.8rem;opacity:.6;padding:4px 12px;
+                           border-radius:16px;border:1px solid var(--border,#444)">
+               🖼️ Galeri
+               <input type="file" accept="image/*"
+                 style="display:none" onchange="diaryPhotoSelected(this)">
+             </label>
+           </div>`
         : ''}
     </div>
 
@@ -188,12 +211,14 @@ function diaryPhotoSelected(input) {
       if (wrap) wrap.innerHTML = `
         <img src="${_diaryPhotoData}" onclick="diaryOpenLightbox('${_diaryPhotoData}')"
           style="max-width:100%;max-height:220px;border-radius:10px;cursor:pointer;object-fit:cover">
-        <br>
-        <button onclick="document.getElementById('diary-file-input').click()"
-          style="margin-top:8px;font-size:.8rem;opacity:.6;background:none;border:none;cursor:pointer">
-          📷 Değiştir</button>
-        <input id="diary-file-input" type="file" accept="image/*" capture="environment"
-          style="display:none" onchange="diaryPhotoSelected(this)">`;
+        <div style="display:flex;justify-content:center;gap:8px;margin-top:8px">
+          <label style="cursor:pointer;font-size:.8rem;opacity:.6;padding:4px 12px;border-radius:16px;border:1px solid var(--border,#444)">
+            📷 Kamera<input type="file" accept="image/*" capture="environment" style="display:none" onchange="diaryPhotoSelected(this)">
+          </label>
+          <label style="cursor:pointer;font-size:.8rem;opacity:.6;padding:4px 12px;border-radius:16px;border:1px solid var(--border,#444)">
+            🖼️ Galeri<input type="file" accept="image/*" style="display:none" onchange="diaryPhotoSelected(this)">
+          </label>
+        </div>`;
     };
     img.src = e.target.result;
   };

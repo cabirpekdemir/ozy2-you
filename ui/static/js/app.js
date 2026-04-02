@@ -108,6 +108,11 @@ async function loadSidebarPlanBadge() {
     if (mr.is_demo) {
       _showDemoBanner(mr.query_count || 0, mr.query_limit || 10, mr.demo_name || '');
       _filterNavForDemo();
+    } else if (!mr.is_demo) {
+      // Admin/authenticated user: always show admin-tier items
+      document.querySelectorAll('[data-tier="admin"]').forEach(el => {
+        el.style.display = '';
+      });
     }
   } catch {}
 }
