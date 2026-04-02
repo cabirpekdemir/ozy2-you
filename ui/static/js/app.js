@@ -963,20 +963,16 @@ async function cameraOpen(callback) {
 
   modal.style.display = 'flex';
 
-  // Check permission state BEFORE showing anything
-  // granted  → skip "Start Camera", open camera directly
-  // denied   → skip "Start Camera", show guide immediately
-  // prompt   → show "Start Camera" button (default path)
+  // Only use permissions API to auto-start when already granted.
+  // Do NOT block on 'denied' — permissions.query can return stale/wrong state
+  // (e.g. Chrome records a silent denial that doesn't appear in settings UI).
+  // Instead: always show "Start Camera", let getUserMedia fail naturally if needed.
+  startBtn.style.display = '';
   if (navigator.permissions) {
     try {
       const perm = await navigator.permissions.query({ name: 'camera' });
-      if (perm.state === 'denied') {
-        startBtn.style.display = 'none';
-        _camShowDenied(startScreen);
-        return;
-      }
       if (perm.state === 'granted') {
-        // Already allowed — start immediately (no button click needed)
+        // Permission already confirmed — skip button, open camera immediately
         startBtn.textContent = '⏳ Starting…';
         startBtn.disabled = true;
         try {
@@ -992,12 +988,9 @@ async function cameraOpen(callback) {
           startBtn.textContent = '▶ Start Camera';
           startBtn.disabled = false;
         }
-        return;
       }
-    } catch { /* permissions API not supported — fall through */ }
+    } catch { /* permissions API not supported — show button */ }
   }
-  // state === 'prompt': show "Start Camera" button, user gesture needed
-  startBtn.style.display = '';
 }
 
 function cameraClose() {
