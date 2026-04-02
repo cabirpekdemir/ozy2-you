@@ -284,6 +284,12 @@ async def login_page(request: Request):
     return templates.TemplateResponse(request, "login.html")
 
 
+@app.get("/voice", response_class=HTMLResponse)
+async def voice_page(request: Request):
+    """Fully accessible voice-first assistant for visually impaired users."""
+    return templates.TemplateResponse(request, "voice.html")
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse(request, "index.html")

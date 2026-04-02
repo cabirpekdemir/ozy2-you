@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="OZY Voice Assistant — Fully accessible AI assistant, no screen needed">
+  <title>OZY — Voice Assistant</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:        #0a0a0a;
+      --surface:   #111;
+      --fg:        #ffffff;
+      --accent:    #FFD700;   /* Gold — 8.6:1 contrast on #0a0a0a */
+      --accent2:   #5DADE2;   /* Sky blue — 4.9:1 */
+      --ok:        #58D68D;   /* Green */
+      --danger:    #E74C3C;   /* Red */
+      --muted:     #aaaaaa;
+      --border:    #2a2a2a;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      user-select: none;
+    }
+
+    /* Skip link — screen readers jump straight to mic */
+    .skip {
+      position: absolute; top: -200px; left: 16px;
+      background: var(--accent); color: #000;
+      font-weight: 800; font-size: 1rem;
+      padding: 10px 20px; border-radius: 8px;
+      text-decoration: none; transition: top .2s;
+      z-index: 999;
+    }
+    .skip:focus { top: 16px; }
+
+    /* Screen-reader-only live region */
+    #sr-live {
+      position: absolute; width: 1px; height: 1px;
+      overflow: hidden; clip: rect(0,0,0,0);
+      white-space: nowrap; border: 0;
+    }
+
+    #app {
+      max-width: 640px;
+      width: 100%;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    /* ── Avatar ─────────────────────────────────────── */
+    #avatar {
+      font-size: 5.5rem;
+      line-height: 1;
+      margin-bottom: 10px;
+      animation: breathe 4s ease-in-out infinite;
+    }
+    @keyframes breathe {
+      0%,100% { transform: scale(1); }
+      50%      { transform: scale(1.06); }
+    }
+
+    #ai-name {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--accent);
+      letter-spacing: .04em;
+      margin-bottom: 6px;
+    }
+
+    #tagline {
+      font-size: .95rem;
+      color: var(--muted);
+      margin-bottom: 28px;
+    }
+
+    /* ── Status ─────────────────────────────────────── */
+    #status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 24px;
+      min-height: 36px;
+    }
+    #status-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: background .3s;
+      flex-shrink: 0;
+    }
+    #status-dot.listening { background: var(--danger); animation: blink 1s infinite; }
+    #status-dot.thinking  { background: var(--accent); animation: blink 1.5s infinite; }
+    #status-dot.speaking  { background: var(--ok); animation: blink .8s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    #status-text {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--fg);
+    }
+
+    /* ── Conversation log ───────────────────────────── */
+    #convo {
+      width: 100%;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 18px;
+      padding: 18px 20px;
+      min-height: 140px;
+      max-height: 300px;
+      overflow-y: auto;
+      text-align: left;
+      margin-bottom: 28px;
+      scroll-behavior: smooth;
+    }
+    #convo:focus { outline: 3px solid var(--accent); }
+
+    .msg { margin-bottom: 14px; line-height: 1.65; font-size: 1rem; }
+    .msg:last-child { margin-bottom: 0; }
+
+    .msg-ai {
+      color: var(--fg);
+      font-weight: 500;
+    }
+    .msg-ai::before {
+      content: attr(data-name) ' ';
+      font-weight: 800;
+      color: var(--accent);
+      margin-right: 2px;
+    }
+
+    .msg-user {
+      color: var(--accent2);
+    }
+    .msg-user::before {
+      content: 'You  ';
+      font-weight: 800;
+      color: var(--accent2);
+    }
+
+    .msg-interim {
+      color: #666;
+      font-style: italic;
+    }
+    .msg-interim::before {
+      content: '🎤  ';
+    }
+
+    /* ── Big Mic Button ─────────────────────────────── */
+    #mic-btn {
+      width: 128px; height: 128px;
+      border-radius: 50%;
+      border: 4px solid var(--accent);
+      background: transparent;
+      color: var(--fg);
+      font-size: 3rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+      transition: border-color .3s, background .3s, transform .15s;
+      position: relative;
+    }
+    #mic-btn:focus {
+      outline: 4px solid var(--accent);
+      outline-offset: 8px;
+    }
+    #mic-btn:active { transform: scale(.94); }
+
+    #mic-btn.listening {
+      border-color: var(--danger);
+      background: rgba(231,76,60,.12);
+      animation: pulse-ring 1.2s ease-in-out infinite;
+    }
+    #mic-btn.thinking {
+      border-color: var(--accent);
+      background: rgba(255,215,0,.07);
+      animation: pulse-ring 1.8s ease-in-out infinite;
+    }
+    #mic-btn.speaking {
+      border-color: var(--ok);
+      background: rgba(88,214,141,.08);
+      animation: pulse-ring 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse-ring {
+      0%   { box-shadow: 0 0 0 0 rgba(255,255,255,.2); }
+      70%  { box-shadow: 0 0 0 20px rgba(255,255,255,0); }
+      100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+    }
+
+    /* ── Hint text ──────────────────────────────────── */
+    #hint {
+      font-size: .88rem;
+      color: var(--muted);
+      margin-bottom: 24px;
+      line-height: 1.8;
+    }
+    kbd {
+      display: inline-block;
+      background: #1e1e1e;
+      border: 1px solid #444;
+      border-radius: 5px;
+      padding: 1px 8px;
+      font-family: monospace;
+      font-size: .82rem;
+      color: #ddd;
+    }
+
+    /* ── Controls bar ───────────────────────────────── */
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .ctrl-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--fg);
+      padding: 9px 18px;
+      border-radius: 24px;
+      cursor: pointer;
+      font-size: .85rem;
+      font-weight: 600;
+      transition: border-color .2s, background .2s;
+    }
+    .ctrl-btn:hover, .ctrl-btn:focus {
+      border-color: var(--accent);
+      background: rgba(255,215,0,.07);
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .ctrl-btn.active {
+      border-color: var(--ok);
+      color: var(--ok);
+    }
+
+    #lang-select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--fg);
+      padding: 8px 14px;
+      border-radius: 24px;
+      font-size: .85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #lang-select:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* ── Back link ──────────────────────────────────── */
+    #back-link {
+      color: var(--muted);
+      font-size: .82rem;
+      text-decoration: none;
+      margin-top: 4px;
+      padding: 6px 12px;
+      border-radius: 8px;
+    }
+    #back-link:hover, #back-link:focus {
+      color: var(--fg);
+      outline: 1px solid var(--border);
+    }
+
+    /* ── No-STT warning ─────────────────────────────── */
+    #no-stt-warn {
+      display: none;
+      background: rgba(231,76,60,.12);
+      border: 2px solid var(--danger);
+      border-radius: 14px;
+      padding: 16px 20px;
+      color: #ff8a80;
+      font-size: .95rem;
+      line-height: 1.6;
+      margin-bottom: 20px;
+      text-align: left;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+<a href="#mic-btn" class="skip">Skip to microphone</a>
+
+<!-- Screen reader live announcement region -->
+<div id="sr-live" aria-live="assertive" aria-atomic="true" role="status"></div>
+
+<main id="app" role="main" aria-label="OZY Voice Assistant">
+
+  <div id="avatar" aria-hidden="true">🤖</div>
+  <div id="ai-name" aria-label="Assistant name">OZY</div>
+  <div id="tagline" aria-label="Tagline">Your voice-first AI assistant</div>
+
+  <!-- Status indicator -->
+  <div id="status-bar" role="status" aria-live="polite" aria-atomic="true">
+    <div id="status-dot" aria-hidden="true"></div>
+    <span id="status-text">Initializing…</span>
+  </div>
+
+  <!-- Browser STT warning -->
+  <div id="no-stt-warn" role="alert">
+    ⚠️ Your browser does not support speech recognition.<br>
+    Please use <strong>Google Chrome</strong> or <strong>Microsoft Edge</strong> for full voice mode.
+    You can still type in the text box below.
+  </div>
+
+  <!-- Conversation log -->
+  <div id="convo"
+       role="log"
+       aria-label="Conversation history"
+       aria-live="polite"
+       tabindex="0">
+  </div>
+
+  <!-- Main microphone button -->
+  <button id="mic-btn"
+          aria-label="Toggle microphone — press Space bar to activate"
+          aria-pressed="false"
+          type="button">
+    🎤
+  </button>
+
+  <div id="hint" aria-label="Keyboard shortcuts">
+    <kbd>Space</kbd> Start · Stop &nbsp;&nbsp;
+    <kbd>Esc</kbd> Interrupt &nbsp;&nbsp;
+    <kbd>C</kbd> Clear
+  </div>
+
+  <!-- Controls -->
+  <div id="controls" role="group" aria-label="Settings">
+    <select id="lang-select" aria-label="Speech language">
+      <option value="tr-TR">🇹🇷 Türkçe</option>
+      <option value="en-US" selected>🇬🇧 English</option>
+      <option value="de-DE">🇩🇪 Deutsch</option>
+      <option value="fr-FR">🇫🇷 Français</option>
+      <option value="es-ES">🇪🇸 Español</option>
+      <option value="pt-PT">🇵🇹 Português</option>
+      <option value="it-IT">🇮🇹 Italiano</option>
+      <option value="ar-SA">🇸🇦 العربية</option>
+      <option value="ja-JP">🇯🇵 日本語</option>
+      <option value="zh-CN">🇨🇳 中文</option>
+    </select>
+
+    <button class="ctrl-btn active" id="auto-btn"
+            aria-pressed="true"
+            onclick="toggleAutoListen()"
+            type="button">
+      🔄 Auto-listen: ON
+    </button>
+
+    <button class="ctrl-btn" id="clear-btn"
+            onclick="clearConvo()"
+            type="button"
+            aria-label="Clear conversation history">
+      🗑️ Clear
+    </button>
+  </div>
+
+  <a id="back-link" href="/">← Back to OZY</a>
+
+</main>
+
+<script src="/static/js/voice.js?v=1"></script>
+</body>
+</html>
