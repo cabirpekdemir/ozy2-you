@@ -3,6 +3,7 @@
 # Licensed under the Elastic License 2.0 — see LICENSE for details.
 
 """OZY2 — FastAPI Application"""
+import asyncio
 import logging
 import sys
 from contextlib import asynccontextmanager
@@ -51,6 +52,10 @@ async def lifespan(app: FastAPI):
     from core.health_check import health_check_and_notify
     scheduler.add_daily("health_check_morning", health_check_and_notify, hour=9,  minute=0)
     scheduler.add_daily("health_check_evening", health_check_and_notify, hour=21, minute=0)
+
+    # ── Automation scheduler ──────────────────────────────────────────────────
+    from api.routers.automations_router import automation_scheduler
+    asyncio.create_task(automation_scheduler())
 
     yield
     scheduler.stop()
@@ -224,7 +229,8 @@ from api.routers.baby_router        import router as baby_router
 from api.routers.smarthome_router   import router as smarthome_router
 from api.routers.women_router       import router as women_router
 from api.routers.daily_router       import router as daily_router
-from api.routers.profile_router     import router as profile_router
+from api.routers.profile_router       import router as profile_router
+from api.routers.automations_router   import router as automations_router
 
 # Optional routers (may not be present in all editions)
 _optional_routers = []
@@ -270,6 +276,7 @@ app.include_router(smarthome_router)
 app.include_router(women_router)
 app.include_router(daily_router)
 app.include_router(profile_router)
+app.include_router(automations_router)
 
 
 @app.get("/login", response_class=HTMLResponse)
