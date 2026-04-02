@@ -807,61 +807,128 @@ function _showOnboarding(isDemo) {
   render();
 }
 
-// ── Camera (getUserMedia) ─────────────────────────────
-let _cameraStream = null;
+// ── Camera (edu-style: getUserMedia called directly in button click) ──
+let _cameraStream   = null;
 let _cameraCallback = null;
+let _camReady       = false;   // listeners attached once
 
-async function cameraOpen(callback) {
-  _cameraCallback = callback;
+function _initCameraListeners() {
+  if (_camReady) return;
+  _camReady = true;
 
-  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const hasGUM   = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  const modal       = document.getElementById('camera-modal');
+  const startScreen = document.getElementById('cam-start-screen');
+  const video       = document.getElementById('camera-video');
+  const liveCtrl    = document.getElementById('cam-live-controls');
+  const startBtn    = document.getElementById('cam-start-btn');
+  const galleryInp  = document.getElementById('cam-gallery-input');
+  const captureBtn  = document.getElementById('cam-capture-btn');
+  const cancelBtn   = document.getElementById('cam-cancel-btn');
+  const closeBtn    = document.getElementById('cam-close-btn');
+  const canvas      = document.getElementById('camera-canvas');
 
-  // Desktop with getUserMedia: show in-browser camera modal
-  if (!isMobile && hasGUM) {
+  // ▶ Start Camera — getUserMedia is called DIRECTLY in this click handler
+  // (guaranteed user-gesture context → Chrome always shows the permission popup)
+  startBtn.addEventListener('click', async function () {
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      // On mobile: close modal and open native camera via <input capture>
+      cameraClose();
+      const inp = document.createElement('input');
+      inp.type = 'file';
+      inp.accept = 'image/*';
+      inp.setAttribute('capture', 'environment');
+      inp.onchange = () => {
+        const file = inp.files?.[0];
+        if (file && _cameraCallback) compressFileToBase64(file, _cameraCallback);
+      };
+      inp.click();
+      return;
+    }
+
+    startBtn.textContent = '⏳ Starting…';
+    startBtn.disabled = true;
     try {
       _cameraStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: false,
       });
-      const video = document.getElementById('camera-video');
       video.srcObject = _cameraStream;
-      document.getElementById('camera-modal').style.display = 'flex';
-      return;
-    } catch(_e) {
-      // Permission denied or no camera — fall through to file input
+      startScreen.style.display = 'none';
+      video.style.display       = 'block';
+      liveCtrl.style.display    = 'flex';
+    } catch (err) {
+      startBtn.textContent = '▶ Start Camera';
+      startBtn.disabled = false;
+      const denied = err.name === 'NotAllowedError';
+      const msg = document.createElement('div');
+      msg.style.cssText = 'margin-top:12px;color:#f87171;font-size:.9rem;text-align:center;max-width:300px';
+      msg.textContent = denied
+        ? '🔒 Camera access denied. Click the 🔒 icon in the address bar → allow Camera → reload.'
+        : '⚠️ No camera found or camera is in use by another app.';
+      startScreen.appendChild(msg);
+      setTimeout(() => msg.remove(), 6000);
     }
-  }
+  });
 
-  // Mobile (or desktop fallback): native camera via <input capture>
-  // This opens the system camera app directly on iOS/Android
-  const inp = document.createElement('input');
-  inp.type = 'file';
-  inp.accept = 'image/*';
-  inp.setAttribute('capture', 'environment'); // must use setAttribute for iOS
-  inp.style.cssText = 'position:fixed;top:-999px;opacity:0';
-  document.body.appendChild(inp);
-  inp.onchange = () => {
-    const file = inp.files?.[0];
-    document.body.removeChild(inp);
-    if (file && callback) compressFileToBase64(file, callback);
-  };
-  inp.click();
+  // 📷 Capture
+  captureBtn.addEventListener('click', function () {
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const b64 = canvas.toDataURL('image/jpeg', 0.78);
+    cameraClose();
+    if (_cameraCallback) _cameraCallback(b64);   // single-arg, matching all panel callbacks
+  });
+
+  // 🖼️ Gallery file picker
+  galleryInp.addEventListener('change', function () {
+    const file = this.files?.[0];
+    if (file && _cameraCallback) {
+      compressFileToBase64(file, _cameraCallback);
+      cameraClose();
+    }
+    this.value = '';
+  });
+
+  // Cancel / Close buttons
+  cancelBtn.addEventListener('click', cameraClose);
+  closeBtn.addEventListener('click',  cameraClose);
+
+  // Click dark backdrop to dismiss
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) cameraClose();
+  });
 }
 
-function cameraCapture() {
-  const video  = document.getElementById('camera-video');
-  const canvas = document.getElementById('camera-canvas');
-  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-  canvas.getContext('2d').drawImage(video, 0, 0);
-  canvas.toBlob(blob => {
-    cameraClose();
-    if (_cameraCallback) _cameraCallback(null, canvas.toDataURL('image/jpeg', 0.78));
-  }, 'image/jpeg', 0.78);
+function cameraOpen(callback) {
+  _cameraCallback = callback;
+  _initCameraListeners();
+
+  // Reset to start screen every time modal opens
+  const startScreen = document.getElementById('cam-start-screen');
+  const video       = document.getElementById('camera-video');
+  const liveCtrl    = document.getElementById('cam-live-controls');
+  const startBtn    = document.getElementById('cam-start-btn');
+
+  // Stop any running stream first
+  if (_cameraStream) { _cameraStream.getTracks().forEach(t => t.stop()); _cameraStream = null; }
+
+  startScreen.style.display = 'flex';
+  video.style.display       = 'none';
+  liveCtrl.style.display    = 'none';
+  startBtn.textContent      = '▶ Start Camera';
+  startBtn.disabled         = false;
+
+  // Remove any old error messages
+  startScreen.querySelectorAll('div[style*="f87171"]').forEach(e => e.remove());
+
+  document.getElementById('camera-modal').style.display = 'flex';
 }
 
 function cameraClose() {
-  if (_cameraStream) { _cameraStream.getTracks().forEach(t=>t.stop()); _cameraStream = null; }
+  if (_cameraStream) { _cameraStream.getTracks().forEach(t => t.stop()); _cameraStream = null; }
   document.getElementById('camera-modal').style.display = 'none';
 }
 
