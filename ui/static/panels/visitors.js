@@ -1,26 +1,6 @@
 /* OZY2 — Demo Visitors (admin only) */
 
 async function init_visitors(el) {
-  // Only meaningful when running a hosted demo (demo_mode: true in settings)
-  try {
-    const s = await fetch('/api/settings').then(r => r.json());
-    if (!s.settings?.demo_mode) {
-      el.innerHTML = `
-        <div style="max-width:500px;margin:80px auto;text-align:center;padding:24px">
-          <div style="font-size:52px;margin-bottom:16px">👥</div>
-          <div style="font-size:18px;font-weight:700;margin-bottom:8px">Visitors</div>
-          <div style="font-size:13px;color:var(--text-3);line-height:1.7">
-            This panel tracks people who sign up for a <strong style="color:var(--text-2)">hosted demo</strong>.<br>
-            Since you're running your own OZY installation, <strong style="color:var(--text-2)">you are the admin</strong> —
-            no demo leads to collect here.<br><br>
-            Enable <code style="background:var(--card-bg);padding:2px 6px;border-radius:4px">demo_mode</code>
-            in Settings if you're hosting OZY for others.
-          </div>
-        </div>`;
-      return;
-    }
-  } catch {}
-
   el.innerHTML = `
     <div style="max-width:860px;margin:0 auto;padding:20px 16px">
 
