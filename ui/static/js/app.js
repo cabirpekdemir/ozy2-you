@@ -274,6 +274,38 @@ async function _initProfileAndOnboarding() {
   } catch {}
 }
 
+// ── Ollama helper ─────────────────────────────────────
+function _detectSystemSpecs() {
+  const ram   = navigator.deviceMemory   || 8;   // GB (capped at 8 by browsers)
+  const cores = navigator.hardwareConcurrency || 4;
+  const ua    = navigator.userAgent;
+  const os    = /Mac/.test(ua) ? 'mac' : /Win/.test(ua) ? 'win' : 'linux';
+
+  let rec;
+  if (ram <= 4 || cores <= 4) {
+    rec = { model:'phi3:mini',    size:'2.3 GB', quality:'Fast & lightweight',  emoji:'⚡' };
+  } else if (ram <= 8 || cores <= 8) {
+    rec = { model:'llama3.2:3b', size:'2.0 GB', quality:'Good balance',         emoji:'🔥' };
+  } else {
+    rec = { model:'llama3.1:8b', size:'4.7 GB', quality:'High quality (recommended)', emoji:'🚀' };
+  }
+
+  const installCmd = {
+    mac:   '→ Download from ollama.com/download',
+    win:   '→ Download from ollama.com/download',
+    linux: 'curl -fsSL https://ollama.com/install.sh | sh',
+  }[os];
+
+  return { ram, cores, os, rec, installCmd };
+}
+
+async function _checkOllamaRunning() {
+  try {
+    const r = await fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(2000) });
+    return r.ok;
+  } catch { return false; }
+}
+
 function _showOnboarding(isDemo) {
   const modal = document.getElementById('onboarding-modal');
   const box   = document.getElementById('onboarding-box');
@@ -286,8 +318,9 @@ function _showOnboarding(isDemo) {
     { emoji:'💼', q:'What do you do?', id:'ob-occ', type:'text', placeholder:'e.g. Designer, Student, Doctor…' },
   ];
 
-  let step = 0;
+  let step = -1;   // -1 = AI setup step (local vs cloud)
   const answers = {};
+  let _obAiChoice = '';   // 'local' | 'cloud'
 
   const genderOptions = ['male','female','other','prefer_not'];
   const genderLabels  = {male:'👦 Male', female:'👩 Female', other:'🌈 Other', prefer_not:'🤐 Prefer not to say'};
@@ -303,8 +336,50 @@ function _showOnboarding(isDemo) {
     'Gaming','Finance','Health','Photography','Movies','Nature','History'];
   const selInterests = new Set();
 
+  const TOTAL = STEPS.length + 4; // ai + name/age/country/occ + gender + interests + diet
+
   function render() {
-    if (step < STEPS.length) {
+    if (step === -1) {
+      // ── AI Setup Step ──
+      const specs = _detectSystemSpecs();
+      const osLabel = {mac:'macOS 🍎', win:'Windows 🪟', linux:'Linux 🐧'}[specs.os];
+      const ramLabel = specs.ram >= 8 ? `${specs.ram}+ GB RAM` : `${specs.ram} GB RAM`;
+      box.innerHTML = `
+        <div style="text-align:center;font-size:3rem;margin-bottom:8px">🤖</div>
+        <h2 style="text-align:center;margin:0 0 6px;font-size:1.2rem">How should OZY's AI run?</h2>
+        <p style="text-align:center;opacity:.5;font-size:.82rem;margin:0 0 20px">Choose once, change anytime in Settings</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <button onclick="obAiChoice(this,'local')" data-ai="local"
+            style="padding:20px 12px;border-radius:14px;border:2px solid var(--border,#444);
+                   cursor:pointer;text-align:center;font-size:.9rem;background:transparent;color:inherit;
+                   ${_obAiChoice==='local'?'border-color:var(--accent,#6366f1);background:rgba(99,102,241,.1)':''}">
+            <div style="font-size:2rem;margin-bottom:6px">🏠</div>
+            <div style="font-weight:700;margin-bottom:4px">Local (Ollama)</div>
+            <div style="font-size:.75rem;opacity:.6">Private, offline<br>runs on your device</div>
+          </button>
+          <button onclick="obAiChoice(this,'cloud')" data-ai="cloud"
+            style="padding:20px 12px;border-radius:14px;border:2px solid var(--border,#444);
+                   cursor:pointer;text-align:center;font-size:.9rem;background:transparent;color:inherit;
+                   ${_obAiChoice==='cloud'?'border-color:var(--accent,#6366f1);background:rgba(99,102,241,.1)':''}">
+            <div style="font-size:2rem;margin-bottom:6px">☁️</div>
+            <div style="font-weight:700;margin-bottom:4px">Cloud</div>
+            <div style="font-size:.75rem;opacity:.6">OpenAI · Gemini<br>Anthropic (API key)</div>
+          </button>
+        </div>
+
+        <div id="ob-ai-detail" style="margin-bottom:16px"></div>
+
+        <button onclick="obNext()" style="width:100%;padding:12px;border-radius:12px;border:none;
+          background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem">
+          Continue →
+        </button>
+        <button onclick="obSkip()" style="width:100%;margin-top:8px;background:none;border:none;
+          color:inherit;opacity:.4;cursor:pointer;font-size:.8rem">Skip for now</button>
+        <div style="text-align:center;margin-top:12px;font-size:.75rem;opacity:.3">1 / ${TOTAL}</div>`;
+
+      // Show detail panel if already selected
+      if (_obAiChoice) _renderAiDetail(specs);
+    } else if (step < STEPS.length) {
       const s = STEPS[step];
       box.innerHTML = `
         ${isDemo ? '<div style="background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.3);border-radius:8px;padding:8px 12px;font-size:.78rem;color:#eab308;margin-bottom:16px">⚠️ Demo mode — do not enter real personal information.</div>' : ''}
@@ -316,13 +391,13 @@ function _showOnboarding(isDemo) {
                  background:transparent;color:inherit;font-size:1rem;box-sizing:border-box;text-align:center"
           onkeydown="if(event.key==='Enter') document.getElementById('ob-next').click()">
         <div style="display:flex;gap:8px;margin-top:16px">
-          ${step > 0 ? '<button onclick="obBack()" style="flex:1;padding:11px;border-radius:12px;border:1px solid var(--border,#444);background:transparent;cursor:pointer;color:inherit">← Back</button>' : ''}
+          <button onclick="obBack()" style="flex:1;padding:11px;border-radius:12px;border:1px solid var(--border,#444);background:transparent;cursor:pointer;color:inherit">← Back</button>
           <button id="ob-next" onclick="obNext()" style="flex:2;padding:11px;border-radius:12px;border:none;background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem">
             ${step < STEPS.length-1 ? 'Next →' : 'Continue →'}
           </button>
         </div>
         <button onclick="obSkip()" style="width:100%;margin-top:10px;background:none;border:none;color:inherit;opacity:.4;cursor:pointer;font-size:.82rem">Skip for now</button>
-        <div style="text-align:center;margin-top:12px;font-size:.75rem;opacity:.3">${step+1} / ${STEPS.length+3}</div>`;
+        <div style="text-align:center;margin-top:12px;font-size:.75rem;opacity:.3">${step+2} / ${TOTAL}</div>`;
       setTimeout(() => document.getElementById(s.id)?.focus(), 100);
     } else if (step === STEPS.length) {
       // Gender
@@ -338,7 +413,7 @@ function _showOnboarding(isDemo) {
             </button>`).join('')}
         </div>
         <button id="ob-next" onclick="obNext()" style="width:100%;margin-top:16px;padding:12px;border-radius:12px;border:none;background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem">Continue →</button>
-        <div style="text-align:center;margin-top:12px;font-size:.75rem;opacity:.3">${step+1} / ${STEPS.length+3}</div>`;
+        <div style="text-align:center;margin-top:12px;font-size:.75rem;opacity:.3">${step+2} / ${TOTAL}</div>`;
     } else if (step === STEPS.length+1) {
       // Interests
       box.innerHTML = `
@@ -354,7 +429,7 @@ function _showOnboarding(isDemo) {
             </button>`).join('')}
         </div>
         <button onclick="obNext()" style="width:100%;padding:12px;border-radius:12px;border:none;background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem">Continue →</button>
-        <div style="text-align:center;margin-top:12px;font-size:.75rem;opacity:.3">${step+1} / ${STEPS.length+3}</div>`;
+        <div style="text-align:center;margin-top:12px;font-size:.75rem;opacity:.3">${step+2} / ${TOTAL}</div>`;
     } else if (step === STEPS.length+2) {
       // Diet goal
       box.innerHTML = `
@@ -373,7 +448,95 @@ function _showOnboarding(isDemo) {
     }
   }
 
+  function _renderAiDetail(specs) {
+    const detail = document.getElementById('ob-ai-detail');
+    if (!detail) return;
+    if (_obAiChoice === 'cloud') {
+      detail.innerHTML = `
+        <div style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:12px;padding:14px;font-size:.83rem">
+          <div style="font-weight:600;margin-bottom:8px">☁️ Cloud setup</div>
+          <div style="opacity:.7;line-height:1.6">
+            You'll need an API key from one of:<br>
+            • <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent,#6366f1)">Google Gemini</a> (free tier available)<br>
+            • <a href="https://platform.openai.com/api-keys" target="_blank" style="color:var(--accent,#6366f1)">OpenAI</a><br>
+            • <a href="https://console.anthropic.com/" target="_blank" style="color:var(--accent,#6366f1)">Anthropic</a><br>
+            Enter it in Settings → AI after setup.
+          </div>
+        </div>`;
+    } else if (_obAiChoice === 'local') {
+      const osLabel = {mac:'macOS 🍎', win:'Windows 🪟', linux:'Linux 🐧'}[specs.os];
+      detail.innerHTML = `
+        <div style="background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);border-radius:12px;padding:14px;font-size:.83rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="font-weight:600">🏠 Local setup · ${osLabel}</div>
+            <span style="font-size:.75rem;opacity:.5">${specs.ram >= 8 ? specs.ram+'+' : specs.ram} GB RAM · ${specs.cores} cores</span>
+          </div>
+          <div style="margin-bottom:10px">
+            <div style="opacity:.6;margin-bottom:4px">Recommended model:</div>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(0,0,0,.2);border-radius:8px">
+              <span style="font-size:1.2rem">${specs.rec.emoji}</span>
+              <div>
+                <div style="font-weight:700;font-family:monospace">${specs.rec.model}</div>
+                <div style="font-size:.75rem;opacity:.6">${specs.rec.size} · ${specs.rec.quality}</div>
+              </div>
+            </div>
+          </div>
+          <div style="opacity:.7;margin-bottom:8px">
+            <div style="margin-bottom:4px">1. Install Ollama:</div>
+            ${specs.os === 'linux'
+              ? `<code style="display:block;background:rgba(0,0,0,.3);padding:6px 10px;border-radius:6px;font-size:.78rem">${specs.installCmd}</code>`
+              : `<a href="https://ollama.com/download" target="_blank" style="color:var(--accent,#6366f1)">ollama.com/download</a>`}
+          </div>
+          <div style="opacity:.7;margin-bottom:10px">
+            <div style="margin-bottom:4px">2. Pull the model:</div>
+            <code style="display:block;background:rgba(0,0,0,.3);padding:6px 10px;border-radius:6px;font-size:.78rem">ollama pull ${specs.rec.model}</code>
+          </div>
+          <button onclick="obCheckOllama('${specs.rec.model}')" id="ob-ollama-check"
+            style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(34,197,94,.4);
+                   background:transparent;color:inherit;cursor:pointer;font-size:.82rem">
+            🔍 Check if Ollama is running
+          </button>
+          <div id="ob-ollama-status" style="margin-top:8px;text-align:center;font-size:.8rem"></div>
+        </div>`;
+    }
+  }
+
+  window.obAiChoice = function(btn, choice) {
+    _obAiChoice = choice;
+    document.querySelectorAll('[data-ai]').forEach(b => {
+      const active = b.dataset.ai === choice;
+      b.style.borderColor = active ? 'var(--accent,#6366f1)' : 'var(--border,#444)';
+      b.style.background  = active ? 'rgba(99,102,241,.1)' : 'transparent';
+    });
+    _renderAiDetail(_detectSystemSpecs());
+  };
+
+  window.obCheckOllama = async function(model) {
+    const btn = document.getElementById('ob-ollama-check');
+    const status = document.getElementById('ob-ollama-status');
+    if (btn) btn.textContent = '⏳ Checking…';
+    const running = await _checkOllamaRunning();
+    if (running) {
+      if (status) status.innerHTML = `<span style="color:#22c55e">✅ Ollama is running! OZY will be configured to use <strong>${model}</strong></span>`;
+      if (btn) { btn.textContent = '✓ Connected'; btn.style.borderColor='#22c55e'; btn.style.color='#22c55e'; }
+    } else {
+      if (status) status.innerHTML = `<span style="color:#f59e0b">⚠️ Ollama not detected. Install it first, then click Check again.</span>`;
+      if (btn) btn.textContent = '🔍 Check again';
+    }
+  };
+
   window.obNext = function() {
+    if (step === -1) {
+      // Save AI choice if local
+      if (_obAiChoice === 'local') {
+        const specs = _detectSystemSpecs();
+        fetch('/api/settings', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ provider: 'ollama', model: specs.rec.model }),
+        }).catch(()=>{});
+      }
+      step = 0; render(); return;
+    }
     if (step < STEPS.length) {
       const s = STEPS[step];
       answers[s.id] = document.getElementById(s.id)?.value.trim() || '';
@@ -381,7 +544,10 @@ function _showOnboarding(isDemo) {
     step++;
     render();
   };
-  window.obBack = function() { step--; render(); };
+  window.obBack = function() {
+    if (step === 0) { step = -1; } else { step--; }
+    render();
+  };
   window.obSkip = function() { modal.style.display = 'none'; };
   window.obGender = function(btn, g) {
     selGender = g;
