@@ -124,21 +124,79 @@ async function initVoice() {
   if (!SR) {
     $('no-stt-warn').style.display = 'block';
     setStatus('error', '', 'Speech recognition unavailable — use Chrome or Edge');
-    // Still allow TTS-only mode (type via keyboard somehow)
   }
 
-  // 4. Setup recognition
+  // 4. Proactively request mic permission via getUserMedia
+  //    This triggers the browser's native permission popup immediately
+  let micGranted = false;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    stream.getTracks().forEach(t => t.stop()); // stop immediately — we just needed the permission
+    micGranted = true;
+  } catch(permErr) {
+    // Permission denied or no mic — show visual guide
+    _showMicDenied();
+  }
+
+  // 5. Setup recognition (even if mic denied — user might fix it later)
   setupRecognition();
 
-  // 5. Play welcome greeting
+  // 6. Play welcome greeting
   setStatus('speaking', 'speaking', t('speaking'));
   const greeting = buildGreeting(userName);
   appendMsg(greeting, 'ai');
   await speak(greeting);
 
-  // 6. Auto-focus mic button after greeting
-  setStatus('ready', '', t('ready'));
-  micBtn.focus();
+  // 7. After greeting, focus mic
+  if (micGranted) {
+    setStatus('ready', '', t('ready'));
+    micBtn.focus();
+  }
+}
+
+// ── Mic denied: visual guide ──────────────────────────────────────
+function _showMicDenied() {
+  setStatus('error', '', 'Microphone access denied');
+
+  // Show a visual how-to in the conversation log
+  const div = document.createElement('div');
+  div.style.cssText = 'margin-bottom:14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:12px;padding:14px 16px;font-size:.88rem;line-height:1.7';
+  div.innerHTML = `
+    <div style="font-weight:700;color:#f87171;margin-bottom:8px">🎙️ Microphone access needed</div>
+    <div style="color:#ddd;margin-bottom:10px">
+      To talk to me, please allow microphone access:<br>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="background:#222;border:1px solid #444;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;font-weight:700">1</span>
+        <span>Click the <strong style="color:#fcd34d">🔒 lock icon</strong> in the address bar (top left)</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="background:#222;border:1px solid #444;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;font-weight:700">2</span>
+        <span>Find <strong style="color:#fcd34d">Microphone</strong> → change to <strong style="color:#86efac">Allow</strong></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="background:#222;border:1px solid #444;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;font-weight:700">3</span>
+        <span>Click the button below to reload</span>
+      </div>
+    </div>
+    <button onclick="location.reload()"
+      style="width:100%;padding:10px;border-radius:10px;border:none;
+             background:#6366f1;color:#fff;font-size:.9rem;font-weight:700;cursor:pointer">
+      🔄 Reload & try again
+    </button>`;
+  convo.appendChild(div);
+  convo.scrollTop = convo.scrollHeight;
+
+  // Update mic button to show it's blocked
+  micBtn.innerHTML = '🚫';
+  micBtn.style.borderColor = 'var(--danger)';
+  micBtn.onclick = () => {
+    // Re-request permission on click
+    navigator.mediaDevices?.getUserMedia({ audio: true })
+      .then(s => { s.getTracks().forEach(t=>t.stop()); location.reload(); })
+      .catch(() => {});
+  };
 }
 
 // ── Speech Recognition ────────────────────────────────────────────
@@ -185,15 +243,18 @@ function setupRecognition() {
     }
   };
 
+  let _micDeniedShown = false;
   _recognition.onerror = e => {
     _listening = false;
     if (_interimEl) { _interimEl.remove(); _interimEl = null; }
     if (e.error === 'no-speech') {
       setStatus('ready', '', t('no_speech'));
     } else if (e.error === 'not-allowed') {
-      setStatus('error', '', 'Microphone access denied');
-      appendMsg('⚠️ Microphone access was denied. Please allow microphone access in your browser settings and reload the page.', 'ai');
-      speak('Microphone access was denied. Please allow it in your browser settings and try again.');
+      // Only show the guide once to avoid duplicates
+      if (!_micDeniedShown) {
+        _micDeniedShown = true;
+        _showMicDenied();
+      }
     } else {
       setStatus('ready', '', `Error: ${e.error}`);
     }
