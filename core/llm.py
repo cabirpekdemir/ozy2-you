@@ -56,6 +56,8 @@ class LLMClient:
     async def chat(self, messages: list[dict], system: str = "",
                    tools: list | None = None) -> str:
         """Single-turn chat. Returns text response."""
+        if self._client is None:
+            return f"⚠️ AI not configured. Please add your {self.provider.capitalize()} API key in Settings."
         try:
             if self.provider == "gemini":
                 return await self._chat_gemini(messages, system, tools)
@@ -73,6 +75,9 @@ class LLMClient:
                      system: str = "",
                      tools: list | None = None) -> AsyncGenerator[str, None]:
         """Streaming chat. Yields text chunks. (tools accepted but not used in stream mode)"""
+        if self._client is None:
+            yield f"⚠️ AI not configured. Please add your {self.provider.capitalize()} API key in Settings."
+            return
         try:
             if self.provider == "gemini":
                 async for chunk in self._stream_gemini(messages, system):

@@ -245,4 +245,253 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Sidebar plan badge
   loadSidebarPlanBadge();
+
+  // Load profile and apply gender-based nav + onboarding check
+  _initProfileAndOnboarding();
 });
+
+// ── Profile / Onboarding ──────────────────────────────
+async function _initProfileAndOnboarding() {
+  try {
+    const [profileRes, meRes] = await Promise.all([
+      fetch('/api/profile').then(r=>r.json()).catch(()=>({})),
+      fetch('/api/auth/me').then(r=>r.json()).catch(()=>({})),
+    ]);
+    const profile = profileRes.profile;
+    const isDemo  = meRes.is_demo || false;
+
+    // Apply gender-based Women's Health visibility
+    if (profile?.gender === 'female') {
+      document.querySelectorAll('[data-panel="women"]').forEach(el => el.style.display = '');
+    } else if (!profile || profile.gender !== 'female') {
+      document.querySelectorAll('[data-panel="women"]').forEach(el => el.style.display = 'none');
+    }
+
+    // Show onboarding if profile not set (except for demo — optional)
+    if (!profile?.onboarding_done) {
+      _showOnboarding(isDemo);
+    }
+  } catch {}
+}
+
+function _showOnboarding(isDemo) {
+  const modal = document.getElementById('onboarding-modal');
+  const box   = document.getElementById('onboarding-box');
+  if (!modal || !box) return;
+
+  const STEPS = [
+    { emoji:'👋', q:'What\'s your name?', id:'ob-name', type:'text', placeholder:'Your name' },
+    { emoji:'🎂', q:'How old are you?', id:'ob-age', type:'number', placeholder:'e.g. 28' },
+    { emoji:'🌍', q:'Where are you from?', id:'ob-country', type:'text', placeholder:'e.g. Turkey' },
+    { emoji:'💼', q:'What do you do?', id:'ob-occ', type:'text', placeholder:'e.g. Designer, Student, Doctor…' },
+  ];
+
+  let step = 0;
+  const answers = {};
+
+  const genderOptions = ['male','female','other','prefer_not'];
+  const genderLabels  = {male:'👦 Male', female:'👩 Female', other:'🌈 Other', prefer_not:'🤐 Prefer not to say'};
+  let selGender = '';
+
+  const dietGoals = [
+    {k:'lose_weight',e:'⚖️',l:'Lose weight'},{k:'healthy',e:'🥗',l:'Healthy eating'},
+    {k:'maintain',e:'⚡',l:'Maintain'},{k:'gain_muscle',e:'💪',l:'Build muscle'},
+  ];
+  let selDiet = '';
+
+  const interestsList = ['Technology','Science','Music','Sports','Travel','Cooking','Art',
+    'Gaming','Finance','Health','Photography','Movies','Nature','History'];
+  const selInterests = new Set();
+
+  function render() {
+    if (step < STEPS.length) {
+      const s = STEPS[step];
+      box.innerHTML = `
+        ${isDemo ? '<div style="background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.3);border-radius:8px;padding:8px 12px;font-size:.78rem;color:#eab308;margin-bottom:16px">⚠️ Demo mode — do not enter real personal information.</div>' : ''}
+        <div style="text-align:center;font-size:3rem;margin-bottom:12px">${s.emoji}</div>
+        <h2 style="text-align:center;margin:0 0 20px;font-size:1.2rem">${s.q}</h2>
+        <input id="${s.id}" type="${s.type}" placeholder="${s.placeholder}"
+          value="${answers[s.id]||''}"
+          style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--border,#444);
+                 background:transparent;color:inherit;font-size:1rem;box-sizing:border-box;text-align:center"
+          onkeydown="if(event.key==='Enter') document.getElementById('ob-next').click()">
+        <div style="display:flex;gap:8px;margin-top:16px">
+          ${step > 0 ? '<button onclick="obBack()" style="flex:1;padding:11px;border-radius:12px;border:1px solid var(--border,#444);background:transparent;cursor:pointer;color:inherit">← Back</button>' : ''}
+          <button id="ob-next" onclick="obNext()" style="flex:2;padding:11px;border-radius:12px;border:none;background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem">
+            ${step < STEPS.length-1 ? 'Next →' : 'Continue →'}
+          </button>
+        </div>
+        <button onclick="obSkip()" style="width:100%;margin-top:10px;background:none;border:none;color:inherit;opacity:.4;cursor:pointer;font-size:.82rem">Skip for now</button>
+        <div style="text-align:center;margin-top:12px;font-size:.75rem;opacity:.3">${step+1} / ${STEPS.length+3}</div>`;
+      setTimeout(() => document.getElementById(s.id)?.focus(), 100);
+    } else if (step === STEPS.length) {
+      // Gender
+      box.innerHTML = `
+        <div style="text-align:center;font-size:3rem;margin-bottom:12px">🧬</div>
+        <h2 style="text-align:center;margin:0 0 20px;font-size:1.2rem">What's your gender?</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          ${genderOptions.map(g=>`
+            <button onclick="obGender(this,'${g}')" data-g="${g}"
+              style="padding:14px;border-radius:12px;border:2px solid var(--border,#444);
+                     cursor:pointer;font-size:.95rem;${selGender===g?'background:var(--accent,#6366f1);color:#fff;border-color:transparent':'background:transparent;color:inherit'}">
+              ${genderLabels[g]}
+            </button>`).join('')}
+        </div>
+        <button id="ob-next" onclick="obNext()" style="width:100%;margin-top:16px;padding:12px;border-radius:12px;border:none;background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem">Continue →</button>
+        <div style="text-align:center;margin-top:12px;font-size:.75rem;opacity:.3">${step+1} / ${STEPS.length+3}</div>`;
+    } else if (step === STEPS.length+1) {
+      // Interests
+      box.innerHTML = `
+        <div style="text-align:center;font-size:3rem;margin-bottom:12px">⭐</div>
+        <h2 style="text-align:center;margin:0 0 6px;font-size:1.2rem">What are you into?</h2>
+        <p style="text-align:center;opacity:.5;font-size:.85rem;margin:0 0 16px">Pick anything that fits</p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px">
+          ${interestsList.map(i=>`
+            <button onclick="obToggleInt(this,'${i}')"
+              style="padding:7px 14px;border-radius:20px;border:1px solid var(--border,#444);cursor:pointer;
+                     font-size:.82rem;${selInterests.has(i)?'background:var(--accent,#6366f1);color:#fff;border-color:transparent':'background:transparent;color:inherit'}">
+              ${i}
+            </button>`).join('')}
+        </div>
+        <button onclick="obNext()" style="width:100%;padding:12px;border-radius:12px;border:none;background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem">Continue →</button>
+        <div style="text-align:center;margin-top:12px;font-size:.75rem;opacity:.3">${step+1} / ${STEPS.length+3}</div>`;
+    } else if (step === STEPS.length+2) {
+      // Diet goal
+      box.innerHTML = `
+        <div style="text-align:center;font-size:3rem;margin-bottom:12px">🥗</div>
+        <h2 style="text-align:center;margin:0 0 6px;font-size:1.2rem">What's your food goal?</h2>
+        <p style="text-align:center;opacity:.5;font-size:.85rem;margin:0 0 16px">OZY will personalize recipes and tips</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+          ${dietGoals.map(d=>`
+            <button onclick="obDiet(this,'${d.k}')" data-d="${d.k}"
+              style="padding:16px;border-radius:12px;border:2px solid var(--border,#444);cursor:pointer;
+                     text-align:center;font-size:.9rem;${selDiet===d.k?'background:var(--accent,#6366f1);color:#fff;border-color:transparent':'background:transparent;color:inherit'}">
+              <div style="font-size:1.6rem;margin-bottom:4px">${d.e}</div>${d.l}
+            </button>`).join('')}
+        </div>
+        <button onclick="obFinish()" style="width:100%;padding:12px;border-radius:12px;border:none;background:var(--accent,#6366f1);color:#fff;cursor:pointer;font-size:1rem">🎉 Let's go!</button>`;
+    }
+  }
+
+  window.obNext = function() {
+    if (step < STEPS.length) {
+      const s = STEPS[step];
+      answers[s.id] = document.getElementById(s.id)?.value.trim() || '';
+    }
+    step++;
+    render();
+  };
+  window.obBack = function() { step--; render(); };
+  window.obSkip = function() { modal.style.display = 'none'; };
+  window.obGender = function(btn, g) {
+    selGender = g;
+    document.querySelectorAll('[data-g]').forEach(b => {
+      const a = b.dataset.g === g;
+      b.style.background = a ? 'var(--accent,#6366f1)' : 'transparent';
+      b.style.color      = a ? '#fff' : 'inherit';
+      b.style.borderColor = a ? 'transparent' : 'var(--border,#444)';
+    });
+  };
+  window.obToggleInt = function(btn, i) {
+    if (selInterests.has(i)) { selInterests.delete(i); btn.style.background='transparent'; btn.style.color='inherit'; btn.style.borderColor='var(--border,#444)'; }
+    else { selInterests.add(i); btn.style.background='var(--accent,#6366f1)'; btn.style.color='#fff'; btn.style.borderColor='transparent'; }
+  };
+  window.obDiet = function(btn, d) {
+    selDiet = d;
+    document.querySelectorAll('[data-d]').forEach(b => {
+      const a = b.dataset.d === d;
+      b.style.background = a ? 'var(--accent,#6366f1)' : 'transparent';
+      b.style.color      = a ? '#fff' : 'inherit';
+      b.style.borderColor = a ? 'transparent' : 'var(--border,#444)';
+    });
+  };
+  window.obFinish = async function() {
+    const payload = {
+      name:         answers['ob-name']   || '',
+      age:          parseInt(answers['ob-age']) || null,
+      country:      answers['ob-country']|| '',
+      occupation:   answers['ob-occ']    || '',
+      gender:       selGender,
+      dietary_goal: selDiet,
+      interests:    [...selInterests],
+      hobbies: [], pets: [],
+      onboarding_done: true,
+    };
+    await fetch('/api/profile', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload),
+    });
+    if (payload.name) {
+      await fetch('/api/settings', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({user_name: payload.name}),
+      }).catch(()=>{});
+    }
+    // Apply gender nav
+    document.querySelectorAll('[data-panel="women"]').forEach(el => {
+      el.style.display = selGender === 'female' ? '' : 'none';
+    });
+    modal.style.display = 'none';
+  };
+
+  modal.style.display = 'flex';
+  render();
+}
+
+// ── Camera (getUserMedia) ─────────────────────────────
+let _cameraStream = null;
+let _cameraCallback = null;
+
+async function cameraOpen(callback) {
+  _cameraCallback = callback;
+  try {
+    _cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    const video = document.getElementById('camera-video');
+    video.srcObject = _cameraStream;
+    document.getElementById('camera-modal').style.display = 'flex';
+  } catch(e) {
+    // Fallback: file picker
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*'; inp.capture = 'environment';
+    inp.onchange = () => { if (inp.files[0] && callback) callback(inp.files[0], null); };
+    inp.click();
+  }
+}
+
+function cameraCapture() {
+  const video  = document.getElementById('camera-video');
+  const canvas = document.getElementById('camera-canvas');
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  canvas.toBlob(blob => {
+    cameraClose();
+    if (_cameraCallback) _cameraCallback(null, canvas.toDataURL('image/jpeg', 0.78));
+  }, 'image/jpeg', 0.78);
+}
+
+function cameraClose() {
+  if (_cameraStream) { _cameraStream.getTracks().forEach(t=>t.stop()); _cameraStream = null; }
+  document.getElementById('camera-modal').style.display = 'none';
+}
+
+// Shared photo compressor (used by baby + daily panels)
+function compressFileToBase64(file, callback) {
+  const canvas = document.createElement('canvas');
+  const img    = new Image();
+  const reader = new FileReader();
+  reader.onload = e => {
+    img.onload = () => {
+      const MAX = 1200;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h*MAX/w); w = MAX; }
+        else       { w = Math.round(w*MAX/h); h = MAX; }
+      }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      callback(canvas.toDataURL('image/jpeg', 0.78));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}

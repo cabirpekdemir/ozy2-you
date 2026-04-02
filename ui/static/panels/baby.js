@@ -90,18 +90,17 @@ function init_baby(el) {
             onkeydown="if(event.key==='Enter') babySubmitLog()">
           <!-- Photo attach -->
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <button type="button" onclick="cameraOpen(b=>babySetPhoto(null,b))"
+              style="display:flex;align-items:center;gap:5px;cursor:pointer;
+                     background:var(--bg-base,#0e1018);border:1px dashed var(--card-border);
+                     border-radius:8px;padding:7px 11px;font-size:12px;color:var(--text-3)">
+              📷 Camera
+            </button>
             <label style="display:flex;align-items:center;gap:5px;cursor:pointer;
                           background:var(--bg-base,#0e1018);border:1px dashed var(--card-border);
                           border-radius:8px;padding:7px 11px;font-size:12px;color:var(--text-3)">
-              📷 Kamera
-              <input type="file" accept="image/*" capture="environment" id="baby-photo-input"
-                style="display:none" onchange="babyPhotoSelected(this)">
-            </label>
-            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;
-                          background:var(--bg-base,#0e1018);border:1px dashed var(--card-border);
-                          border-radius:8px;padding:7px 11px;font-size:12px;color:var(--text-3)">
-              🖼️ Galeri
-              <input type="file" accept="image/*" id="baby-photo-input-gallery"
+              🖼️ Gallery
+              <input type="file" accept="image/*" id="baby-photo-input"
                 style="display:none" onchange="babyPhotoSelected(this)">
             </label>
             <div id="baby-photo-preview" style="display:none">
@@ -339,28 +338,18 @@ function babyCloseLogForm() {
 function babyPhotoSelected(input) {
   const file = input.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    // Compress via canvas
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const maxDim = 1200;
-      let w = img.width, h = img.height;
-      if (w > maxDim || h > maxDim) {
-        if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
-        else       { w = Math.round(w * maxDim / h); h = maxDim; }
-      }
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      _babyPhotoData = canvas.toDataURL('image/jpeg', 0.75);
-      document.getElementById('baby-photo-thumb').src = _babyPhotoData;
-      document.getElementById('baby-photo-preview').style.display = 'flex';
-      document.getElementById('baby-photo-preview').style.alignItems = 'center';
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
+  compressFileToBase64(file, b64 => babySetPhoto(null, b64));
+}
+
+function babySetPhoto(file, b64) {
+  if (file) {
+    compressFileToBase64(file, b64 => babySetPhoto(null, b64));
+    return;
+  }
+  _babyPhotoData = b64;
+  document.getElementById('baby-photo-thumb').src = _babyPhotoData;
+  document.getElementById('baby-photo-preview').style.display = 'flex';
+  document.getElementById('baby-photo-preview').style.alignItems = 'center';
 }
 
 function babyClearPhoto() {
