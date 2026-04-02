@@ -910,21 +910,33 @@ function _camShowDenied(startScreen) {
   startScreen.querySelectorAll('.cam-msg').forEach(e => e.remove());
   const msg = document.createElement('div');
   msg.className = 'cam-msg';
-  msg.style.cssText = 'margin-top:14px;text-align:center;max-width:320px;line-height:1.6';
+  msg.style.cssText = 'margin-top:14px;text-align:center;max-width:340px;line-height:1.7';
   msg.innerHTML = `
-    <div style="color:#f87171;font-size:.9rem;margin-bottom:12px">
-      🔒 Camera access is blocked for this site.
+    <div style="color:#f87171;font-size:.9rem;margin-bottom:14px;font-weight:600">
+      📷 Camera is blocked for this site
     </div>
-    <div style="color:#aaa;font-size:.82rem;margin-bottom:14px">
-      Click the <strong style="color:#fff">🔒</strong> icon in the address bar
-      → <strong style="color:#fff">Camera</strong>
-      → change to <strong style="color:#fff">Allow</strong>
-      → then reload.
+    <div style="color:#ccc;font-size:.82rem;margin-bottom:6px;text-align:left;
+                background:rgba(255,255,255,.06);border-radius:10px;padding:12px 14px">
+      <div style="margin-bottom:8px;color:#aaa;font-size:.78rem;font-weight:600;
+                  text-transform:uppercase;letter-spacing:.5px">Option 1 — Address bar</div>
+      Look for a <strong style="color:#fff">📷</strong> camera icon on the
+      <strong style="color:#fff">right side</strong> of the address bar
+      → click it → set Camera to <strong style="color:#fff">Allow</strong>
+    </div>
+    <div style="color:#ccc;font-size:.82rem;margin-bottom:14px;text-align:left;
+                background:rgba(255,255,255,.06);border-radius:10px;padding:12px 14px;margin-top:6px">
+      <div style="margin-bottom:8px;color:#aaa;font-size:.78rem;font-weight:600;
+                  text-transform:uppercase;letter-spacing:.5px">Option 2 — Chrome Settings</div>
+      Chrome menu <strong style="color:#fff">⋮</strong>
+      → Settings → Privacy &amp; Security
+      → Site Settings → Camera
+      → find <strong style="color:#fff">demo.ozy2.com</strong>
+      → Allow
     </div>
     <button onclick="location.reload()"
       style="padding:9px 22px;border-radius:50px;border:none;
              background:var(--accent,#6366f1);color:#fff;font-size:.9rem;
-             font-weight:600;cursor:pointer">🔄 Reload page</button>`;
+             font-weight:600;cursor:pointer">🔄 Reload after allowing</button>`;
   startScreen.appendChild(msg);
 }
 
