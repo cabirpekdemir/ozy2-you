@@ -15,6 +15,7 @@ let _aiName       = 'OZY';
 let _aiAvatar     = '🤖';
 let _currentAudio = null;
 let _abortCtrl    = null;
+let _audioCtx     = null;   // AudioContext unlocked on first mic click
 
 // ── DOM refs ──────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
@@ -207,6 +208,13 @@ async function toggleMic() {
   if (_listening) { _recognition?.stop(); return; }
   if (_thinking) return;
 
+  // Unlock AudioContext on every click (user gesture = no autoplay block)
+  // This allows audio.play() to work even after long async chains (LLM latency)
+  if (!_audioCtx) {
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (_audioCtx.state === 'suspended') await _audioCtx.resume();
+
   // Request mic permission on first use (user gesture = reliable Chrome popup)
   if (!_micGranted) {
     micBtn.innerHTML = '⏳';
@@ -233,7 +241,7 @@ async function toggleMic() {
 }
 
 function interrupt() {
-  if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
+  if (_currentAudio) { try { _currentAudio.pause(); } catch(_){} _currentAudio = null; }
   if (window.speechSynthesis) speechSynthesis.cancel();
   if (_abortCtrl) { _abortCtrl.abort(); _abortCtrl = null; }
   _speaking = false; _thinking = false;
@@ -366,15 +374,34 @@ async function speak(text) {
 }
 
 async function _speakChunk(text) {
+  // Try server TTS (Microsoft Edge Neural voices)
   try {
     const r = await fetch('/api/tts/speak', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),
     });
     if (r.ok && r.headers.get('content-type')?.includes('audio')) {
-      const blob = await r.blob();
-      if (blob.size > 100) {
-        const url = URL.createObjectURL(blob);
+      const arrayBuf = await r.arrayBuffer();
+      if (arrayBuf.byteLength > 100) {
+        // Use AudioContext if available (unlocked by mic click → no autoplay block)
+        if (_audioCtx) {
+          try {
+            const decoded = await _audioCtx.decodeAudioData(arrayBuf.slice(0));
+            await new Promise((res, rej) => {
+              const src = _audioCtx.createBufferSource();
+              src.buffer = decoded;
+              src.connect(_audioCtx.destination);
+              src.onended = res;
+              // store ref so interrupt() can stop it
+              _currentAudio = { pause: () => { try { src.stop(); } catch(_){} } };
+              src.start(0);
+            });
+            _currentAudio = null;
+            return;
+          } catch(_) { /* decoding failed — fall through */ }
+        }
+        // Fallback: HTMLAudio (works if page was recently interacted with)
+        const url = URL.createObjectURL(new Blob([arrayBuf], { type: 'audio/mpeg' }));
         _currentAudio = new Audio(url);
         await new Promise(res => {
           _currentAudio.onended = res; _currentAudio.onerror = res;
@@ -385,6 +412,7 @@ async function _speakChunk(text) {
       }
     }
   } catch(_) {}
+  // Final fallback: browser Web Speech Synthesis
   await _webSynth(text);
 }
 
