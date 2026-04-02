@@ -177,6 +177,11 @@ def _trim_history(keep: int = 200, session_id: str = None):
         """, (*sid_params, *sid_params, keep))
 
 
+def trim_history(keep: int = 4, session_id: str = None):
+    """Public: keep only the N most recent history messages (used after auto-summarize)."""
+    _trim_history(keep=keep, session_id=session_id)
+
+
 def build_memory_block(session_id: str = None, query: str = "",
                        max_facts: int = 5) -> str:
     """Returns a formatted string of relevant facts for system prompt injection.
