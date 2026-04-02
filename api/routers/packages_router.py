@@ -31,6 +31,7 @@ TIERS: dict = {
             "skills", "marketplace",
             "drive", "github", "youtube", "lesson", "plans", "stocks",
             "nutrition", "baby", "photos", "smarthome", "coffee",
+            "visitors", "automations", "roles", "packages", "profile",
         ],
     },
     "professional": {
@@ -70,6 +71,9 @@ TIERS: dict = {
             "notes", "reminders", "books", "settings",
             "gmail", "calendar", "telegram",
             "skills", "marketplace",
+            "drive", "github", "youtube", "lesson", "plans", "stocks",
+            "nutrition", "baby", "photos", "smarthome", "coffee",
+            "visitors", "automations", "roles", "packages", "profile",
         ],
     },
 }
