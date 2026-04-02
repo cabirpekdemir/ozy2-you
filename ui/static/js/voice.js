@@ -126,19 +126,11 @@ async function initVoice() {
     setStatus('error', '', 'Speech recognition unavailable — use Chrome or Edge');
   }
 
-  // 4. Proactively request mic permission via getUserMedia
-  //    This triggers the browser's native permission popup immediately
-  let micGranted = false;
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-    stream.getTracks().forEach(t => t.stop()); // stop immediately — we just needed the permission
-    micGranted = true;
-  } catch(permErr) {
-    // Permission denied or no mic — show visual guide
-    _showMicDenied();
-  }
+  // 4. Check & request microphone permission
+  const micGranted = await _requestMicPermission();
+  if (!micGranted) return; // permission UI shown, waiting for user action
 
-  // 5. Setup recognition (even if mic denied — user might fix it later)
+  // 5. Setup recognition
   setupRecognition();
 
   // 6. Play welcome greeting
@@ -147,56 +139,131 @@ async function initVoice() {
   appendMsg(greeting, 'ai');
   await speak(greeting);
 
-  // 7. After greeting, focus mic
-  if (micGranted) {
-    setStatus('ready', '', t('ready'));
-    micBtn.focus();
-  }
+  // 7. Ready
+  setStatus('ready', '', t('ready'));
+  micBtn.focus();
 }
 
-// ── Mic denied: visual guide ──────────────────────────────────────
-function _showMicDenied() {
-  setStatus('error', '', 'Microphone access denied');
+// ── Microphone permission flow ────────────────────────────────────
+// Returns true if granted, false if not (shows appropriate UI)
+async function _requestMicPermission() {
+  // Step 1: Check current state without triggering a popup yet
+  let state = 'prompt';
+  try {
+    const perm = await navigator.permissions.query({ name: 'microphone' });
+    state = perm.state; // 'granted' | 'denied' | 'prompt'
 
-  // Show a visual how-to in the conversation log
+    // Auto-reload if user grants permission in browser settings while page is open
+    perm.onchange = () => {
+      if (perm.state === 'granted') location.reload();
+    };
+  } catch(_) {
+    // Firefox / older browsers don't support permissions.query for microphone
+    state = 'prompt';
+  }
+
+  if (state === 'granted') return true;
+
+  if (state === 'denied') {
+    // Permission was previously blocked — Chrome won't show popup, guide user to reset
+    _showMicDenied();
+    return false;
+  }
+
+  // state === 'prompt' — first time: show a friendly permission screen
+  // Must be triggered by a user click (user gesture) to show Chrome's popup
+  return new Promise(resolve => {
+    _showMicPrompt(resolve);
+  });
+}
+
+// First-time permission request screen
+function _showMicPrompt(onGranted) {
+  const overlay = document.createElement('div');
+  overlay.id = 'mic-overlay';
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:999;
+    display:flex;align-items:center;justify-content:center;padding:24px;`;
+  overlay.innerHTML = `
+    <div style="max-width:380px;width:100%;text-align:center">
+      <div style="font-size:5rem;margin-bottom:16px;animation:breathe 3s ease-in-out infinite">🎙️</div>
+      <h2 style="font-size:1.4rem;font-weight:800;margin:0 0 10px;color:#fff">
+        Microphone access needed
+      </h2>
+      <p style="color:#aaa;font-size:.92rem;line-height:1.6;margin:0 0 24px">
+        ${_aiName} needs your microphone to hear you.<br>
+        Click the button below — Chrome will ask for permission.
+      </p>
+      <button id="mic-allow-btn"
+        style="width:100%;padding:16px;border-radius:16px;border:none;
+               background:#6366f1;color:#fff;font-size:1.1rem;font-weight:800;
+               cursor:pointer;margin-bottom:12px;display:flex;align-items:center;
+               justify-content:center;gap:10px;transition:opacity .2s">
+        🎤 Allow microphone
+      </button>
+      <button onclick="history.back()"
+        style="width:100%;padding:10px;border-radius:12px;border:1px solid #333;
+               background:transparent;color:#666;font-size:.85rem;cursor:pointer">
+        ← Go back
+      </button>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  document.getElementById('mic-allow-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('mic-allow-btn');
+    btn.textContent = '⏳ Waiting for permission…';
+    btn.style.opacity = '.7';
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      stream.getTracks().forEach(t => t.stop());
+      overlay.remove();
+      onGranted(true);
+    } catch(_) {
+      overlay.remove();
+      _showMicDenied();
+      onGranted(false);
+    }
+  });
+}
+
+// Permission permanently denied — guide user to reset it
+function _showMicDenied() {
+  setStatus('error', '', 'Microphone blocked — see instructions below');
+  micBtn.innerHTML = '🚫';
+  micBtn.style.borderColor = 'var(--danger,#e74c3c)';
+  micBtn.title = 'Microphone blocked';
+
   const div = document.createElement('div');
-  div.style.cssText = 'margin-bottom:14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:12px;padding:14px 16px;font-size:.88rem;line-height:1.7';
+  div.style.cssText = 'margin-bottom:14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);border-radius:14px;padding:16px;font-size:.88rem;line-height:1.7';
   div.innerHTML = `
-    <div style="font-weight:700;color:#f87171;margin-bottom:8px">🎙️ Microphone access needed</div>
-    <div style="color:#ddd;margin-bottom:10px">
-      To talk to me, please allow microphone access:<br>
+    <div style="font-weight:800;color:#f87171;font-size:1rem;margin-bottom:10px">
+      🔇 Microphone is blocked
     </div>
-    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="background:#222;border:1px solid #444;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;font-weight:700">1</span>
-        <span>Click the <strong style="color:#fcd34d">🔒 lock icon</strong> in the address bar (top left)</span>
+    <div style="color:#ccc;margin-bottom:14px;font-size:.85rem">
+      Chrome remembered your previous "Block" choice.<br>
+      You need to reset it manually — takes 10 seconds:
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.04);padding:8px 12px;border-radius:8px">
+        <span style="font-size:1.2rem">🔒</span>
+        <span><strong style="color:#fcd34d">Click the lock icon</strong> in your browser's address bar</span>
       </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="background:#222;border:1px solid #444;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;font-weight:700">2</span>
-        <span>Find <strong style="color:#fcd34d">Microphone</strong> → change to <strong style="color:#86efac">Allow</strong></span>
+      <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.04);padding:8px 12px;border-radius:8px">
+        <span style="font-size:1.2rem">🎙️</span>
+        <span>Find <strong style="color:#fcd34d">Microphone</strong> → set to <strong style="color:#86efac">Allow</strong></span>
       </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="background:#222;border:1px solid #444;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;font-weight:700">3</span>
-        <span>Click the button below to reload</span>
+      <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.04);padding:8px 12px;border-radius:8px">
+        <span style="font-size:1.2rem">🔄</span>
+        <span>Then click <strong style="color:#86efac">Reload</strong> below</span>
       </div>
     </div>
     <button onclick="location.reload()"
-      style="width:100%;padding:10px;border-radius:10px;border:none;
-             background:#6366f1;color:#fff;font-size:.9rem;font-weight:700;cursor:pointer">
-      🔄 Reload & try again
+      style="width:100%;padding:12px;border-radius:12px;border:none;
+             background:#6366f1;color:#fff;font-size:.95rem;font-weight:700;cursor:pointer">
+      🔄 Reload page
     </button>`;
   convo.appendChild(div);
   convo.scrollTop = convo.scrollHeight;
-
-  // Update mic button to show it's blocked
-  micBtn.innerHTML = '🚫';
-  micBtn.style.borderColor = 'var(--danger)';
-  micBtn.onclick = () => {
-    // Re-request permission on click
-    navigator.mediaDevices?.getUserMedia({ audio: true })
-      .then(s => { s.getTracks().forEach(t=>t.stop()); location.reload(); })
-      .catch(() => {});
-  };
 }
 
 // ── Speech Recognition ────────────────────────────────────────────
