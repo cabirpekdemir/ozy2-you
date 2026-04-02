@@ -861,14 +861,18 @@ function _initCameraListeners() {
     } catch (err) {
       startBtn.textContent = '▶ Start Camera';
       startBtn.disabled = false;
-      const denied = err.name === 'NotAllowedError';
-      const msg = document.createElement('div');
-      msg.style.cssText = 'margin-top:12px;color:#f87171;font-size:.9rem;text-align:center;max-width:300px';
-      msg.textContent = denied
-        ? '🔒 Camera access denied. Click the 🔒 icon in the address bar → allow Camera → reload.'
-        : '⚠️ No camera found or camera is in use by another app.';
-      startScreen.appendChild(msg);
-      setTimeout(() => msg.remove(), 6000);
+      if (err.name === 'NotAllowedError') {
+        startBtn.style.display = 'none';
+        _camShowDenied(startScreen);
+      } else {
+        startScreen.querySelectorAll('.cam-msg').forEach(e => e.remove());
+        const msg = document.createElement('div');
+        msg.className = 'cam-msg';
+        msg.style.cssText = 'margin-top:12px;color:#f87171;font-size:.9rem;text-align:center;max-width:300px';
+        msg.textContent = '⚠️ No camera found or camera is in use by another app.';
+        startScreen.appendChild(msg);
+        setTimeout(() => msg.remove(), 6000);
+      }
     }
   });
 
@@ -902,11 +906,33 @@ function _initCameraListeners() {
   });
 }
 
-function cameraOpen(callback) {
+function _camShowDenied(startScreen) {
+  startScreen.querySelectorAll('.cam-msg').forEach(e => e.remove());
+  const msg = document.createElement('div');
+  msg.className = 'cam-msg';
+  msg.style.cssText = 'margin-top:14px;text-align:center;max-width:320px;line-height:1.6';
+  msg.innerHTML = `
+    <div style="color:#f87171;font-size:.9rem;margin-bottom:12px">
+      🔒 Camera access is blocked for this site.
+    </div>
+    <div style="color:#aaa;font-size:.82rem;margin-bottom:14px">
+      Click the <strong style="color:#fff">🔒</strong> icon in the address bar
+      → <strong style="color:#fff">Camera</strong>
+      → change to <strong style="color:#fff">Allow</strong>
+      → then reload.
+    </div>
+    <button onclick="location.reload()"
+      style="padding:9px 22px;border-radius:50px;border:none;
+             background:var(--accent,#6366f1);color:#fff;font-size:.9rem;
+             font-weight:600;cursor:pointer">🔄 Reload page</button>`;
+  startScreen.appendChild(msg);
+}
+
+async function cameraOpen(callback) {
   _cameraCallback = callback;
   _initCameraListeners();
 
-  // Reset to start screen every time modal opens
+  const modal       = document.getElementById('camera-modal');
   const startScreen = document.getElementById('cam-start-screen');
   const video       = document.getElementById('camera-video');
   const liveCtrl    = document.getElementById('cam-live-controls');
@@ -915,16 +941,51 @@ function cameraOpen(callback) {
   // Stop any running stream first
   if (_cameraStream) { _cameraStream.getTracks().forEach(t => t.stop()); _cameraStream = null; }
 
+  // Reset UI
   startScreen.style.display = 'flex';
   video.style.display       = 'none';
   liveCtrl.style.display    = 'none';
   startBtn.textContent      = '▶ Start Camera';
   startBtn.disabled         = false;
+  startScreen.querySelectorAll('.cam-msg').forEach(e => e.remove());
 
-  // Remove any old error messages
-  startScreen.querySelectorAll('div[style*="f87171"]').forEach(e => e.remove());
+  modal.style.display = 'flex';
 
-  document.getElementById('camera-modal').style.display = 'flex';
+  // Check permission state BEFORE showing anything
+  // granted  → skip "Start Camera", open camera directly
+  // denied   → skip "Start Camera", show guide immediately
+  // prompt   → show "Start Camera" button (default path)
+  if (navigator.permissions) {
+    try {
+      const perm = await navigator.permissions.query({ name: 'camera' });
+      if (perm.state === 'denied') {
+        startBtn.style.display = 'none';
+        _camShowDenied(startScreen);
+        return;
+      }
+      if (perm.state === 'granted') {
+        // Already allowed — start immediately (no button click needed)
+        startBtn.textContent = '⏳ Starting…';
+        startBtn.disabled = true;
+        try {
+          _cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+            audio: false,
+          });
+          video.srcObject = _cameraStream;
+          startScreen.style.display = 'none';
+          video.style.display       = 'block';
+          liveCtrl.style.display    = 'flex';
+        } catch {
+          startBtn.textContent = '▶ Start Camera';
+          startBtn.disabled = false;
+        }
+        return;
+      }
+    } catch { /* permissions API not supported — fall through */ }
+  }
+  // state === 'prompt': show "Start Camera" button, user gesture needed
+  startBtn.style.display = '';
 }
 
 function cameraClose() {
