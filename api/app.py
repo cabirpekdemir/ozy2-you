@@ -219,11 +219,23 @@ from api.routers.marketplace_router import router as marketplace_router
 from api.routers.packages_router    import router as packages_router
 from api.routers.drive_router       import router as drive_router
 from api.routers.github_router      import router as github_router
-from api.routers.youtube_router     import router as youtube_router
-from api.routers.stocks_router      import router as stocks_router
 from api.routers.nutrition_router   import router as nutrition_router
 from api.routers.baby_router        import router as baby_router
 from api.routers.smarthome_router   import router as smarthome_router
+
+# Optional routers (may not be present in all editions)
+_optional_routers = []
+for _mod, _alias in [
+    ("api.routers.youtube_router", "youtube_router"),
+    ("api.routers.stocks_router",  "stocks_router"),
+    ("api.routers.lesson_router",  "lesson_router"),
+    ("api.routers.plans_router",   "plans_router"),
+]:
+    try:
+        import importlib as _il
+        _optional_routers.append(_il.import_module(_mod).router)
+    except ModuleNotFoundError:
+        pass
 
 
 app.include_router(auth_router)
@@ -247,8 +259,8 @@ app.include_router(marketplace_router)
 app.include_router(packages_router)
 app.include_router(drive_router)
 app.include_router(github_router)
-app.include_router(youtube_router)
-app.include_router(stocks_router)
+for _r in _optional_routers:
+    app.include_router(_r)
 app.include_router(nutrition_router)
 app.include_router(baby_router)
 app.include_router(smarthome_router)
